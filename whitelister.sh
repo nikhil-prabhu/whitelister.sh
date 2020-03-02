@@ -115,3 +115,14 @@ function _check_sid_exists() { #quickdoc: Checks if an entered SID exists in the
 	return 1
     fi
 }
+
+function _get_system_details() { #quickdoc: Extracts system information from the SID reference table.
+    # System information
+    SYS_INFO=$(grep -i "$1" "$SAP_ROUT_TAB" | head -n 1)
+    # Hostname
+    HOST_NAME=$(echo "$SYS_INFO" | awk '{print $3}')
+    # Dispatcher port
+    DISP_PORT=$(echo "$SYS_INFO" | awk '{print $4}' | tr -d ',')
+    # Gateway port
+    GATW_PORT=$(echo "$SYS_INFO" | awk '{print $5}')
+}
