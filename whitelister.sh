@@ -137,3 +137,7 @@ function _insert_entry_webdisptab() { #quickdoc: Inserts an entry into the tempo
 function _insert_entry_saprouttab() { #quickdoc: Inserts an entry into the router table.
     sed -i "\$a$1" "$TMP_ROUT_TAB"
 }
+
+function _remove_blank_lines() { #quickdoc: Removes blank lines from a file.
+    sed -i "/^$/d" "$1"
+}
