@@ -141,3 +141,7 @@ function _insert_entry_saprouttab() { #quickdoc: Inserts an entry into the route
 function _remove_blank_lines() { #quickdoc: Removes blank lines from a file.
     sed -i "/^$/d" "$1"
 }
+
+function _update_webdisptab() { #quickdoc: Updates the entries in the webdisptab ACL file.
+    cp "$TMP_WEB_DISP_TAB" "$WEB_DISP_TAB"
+}
