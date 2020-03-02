@@ -116,13 +116,34 @@ function _check_valid_ipv4_address() { #quickdoc: Checks if an entered IPv4 addr
     # passed into the function matches a regular expression (which looks quite
     # long and intimidating, but is really just a simple pattern check).
     #
-    # Return values:
+    # Returns:
     #
     # 0    If the IP address (and optional subnet) is valid.
     # 1    If the IP address (and optional subnet) is invalid.
 
     
     if [[ "$1" =~ ^(([1-9]?[0-9]|1[0-9][0-9]|2([0-4][0-9]|5[0-5]))\.){3}([1-9]?[0-9]|1[0-9][0-9]|2([0-4][0-9]|5[0-5]))([/]([0123456789]|1[0-9]|2[0-9]|3[0-2]))?$ && ! ("$1" =~ ^(([0])\.){3}([0])([/]([0123456789]|1[0-9]|2[0-9]|3[0-2]))?$) ]]
+    then
+	return 0
+    else
+	return 1
+    fi
+}
+
+function _check_valid_sid() { #quickdoc: Checks if an entered SID is valid or not.
+
+    # Expanded documentation:
+    #
+    # The function checks whether an entered SID is valid or not. It does so
+    # by checking whether the SID passed into the function matches a regular
+    # expression.
+    #
+    # Returns:
+    #
+    # 0    If the SID is valid.
+    # 1    If the SID is invalid.
+
+    if [[ "$1" =~ ^[A-Za-z0-9][A-Za-z0-9][A-Za-z0-9]$ ]]
     then
 	return 0
     else
