@@ -70,3 +70,11 @@ then
     RUN_PID=$(cat "$LOCKFILE" | tr -d '\n')
 fi
 
+#############
+# FUNCTIONS #
+#############
+
+function _create_backups() { #public: Creates backups of ACL files.
+    cp "$WEB_DISP_TAB" "$BKP_WEB_DISP_TAB"
+    cp "$SAP_ROUT_TAB" "$BKP_SAP_ROUT_TAB"
+}
