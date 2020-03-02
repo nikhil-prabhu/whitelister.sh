@@ -150,3 +150,24 @@ function _check_valid_sid() { #quickdoc: Checks if an entered SID is valid or no
 	return 1
     fi
 }
+
+function _check_sid_exists() { #quickdoc: Checks if an entered SID exists in the reference table.
+
+    # Expanded documentation:
+    #
+    # Checks if an entered SID exists in the reference table in the router table
+    # file or not. It does so by searching for the entered SID in the router table
+    # using the grep command.
+    #
+    # Returns:
+    #
+    # 0    If the SID exists.
+    # 1    If the SID does not exist.
+
+    if grep -i -q "$1" "$SAP_ROUT_TAB"
+    then
+	return 0
+    else
+	return 1
+    fi
+}
