@@ -145,3 +145,7 @@ function _remove_blank_lines() { #quickdoc: Removes blank lines from a file.
 function _update_webdisptab() { #quickdoc: Updates the entries in the webdisptab ACL file.
     cp "$TMP_WEB_DISP_TAB" "$WEB_DISP_TAB"
 }
+
+function _update_saprouttab() { #quickdoc: Updates the entries in the router table file.
+    cp "$TMP_ROUT_TAB" "$SAP_ROUT_TAB"
+}
