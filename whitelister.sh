@@ -75,53 +75,21 @@ fi
 #############
 
 function _create_backups() { #quickdoc: Creates backups of ACL files.
-
-    # Expanded documentation:
-    #
-    # The function just copies the ACL files into backup files whose
-    # names are specified by the global variables suffixed with "BKP_".
-
     cp "$WEB_DISP_TAB" "$BKP_WEB_DISP_TAB"
     cp "$SAP_ROUT_TAB" "$BKP_SAP_ROUT_TAB"
 }
 
 function _create_temp_files() { #quickdoc: Creates temporary files to store data.
-
-    # Expanded documentation
-    #
-    # The function copies the ACL files into a temporary files whose
-    # names are specified by the global variables suffixed with "TMP_"
-    # in the /tmp directory.
-    
     cp "$WEB_DISP_TAB" "$TMP_WEB_DISP_TAB"
     cp "$SAP_ROUT_TAB" "$TMP_SAP_ROUT_TAB"
     touch "$TMP_IPS" "$TMP_SIDS"
 }
 
 function _remove_temp_files() { #quickdoc: Removes temporary files used by the script.
-
-    # Expanded documentation
-    #
-    # The function just removes all the temporary files
     rm "$TMP_WEB_DISP_TAB" "$TMP_SAP_ROUT_TAB" "$TMP_IPS" "$TMP_SIDS"
 }
 
 function _check_valid_ipv4_address() { #quickdoc: Checks if an entered IPv4 address is valid or not.
-
-    # Expanded documentation:
-    #
-    # The function checks whether an entered IP address is within the range
-    # (0.0.0.1 - 255.255.255.255) or not. It also checks if the subnet entered
-    # (if any) is within 0 to 32. It does so by checking whether the IP address
-    # passed into the function matches a regular expression (which looks quite
-    # long and intimidating, but is really just a simple pattern check).
-    #
-    # Returns:
-    #
-    # 0    If the IP address (and optional subnet) is valid.
-    # 1    If the IP address (and optional subnet) is invalid.
-
-    
     if [[ "$1" =~ ^(([1-9]?[0-9]|1[0-9][0-9]|2([0-4][0-9]|5[0-5]))\.){3}([1-9]?[0-9]|1[0-9][0-9]|2([0-4][0-9]|5[0-5]))([/]([0123456789]|1[0-9]|2[0-9]|3[0-2]))?$ && ! ("$1" =~ ^(([0])\.){3}([0])([/]([0123456789]|1[0-9]|2[0-9]|3[0-2]))?$) ]]
     then
 	return 0
@@ -131,18 +99,6 @@ function _check_valid_ipv4_address() { #quickdoc: Checks if an entered IPv4 addr
 }
 
 function _check_valid_sid() { #quickdoc: Checks if an entered SID is valid or not.
-
-    # Expanded documentation:
-    #
-    # The function checks whether an entered SID is valid or not. It does so
-    # by checking whether the SID passed into the function matches a regular
-    # expression.
-    #
-    # Returns:
-    #
-    # 0    If the SID is valid.
-    # 1    If the SID is invalid.
-
     if [[ "$1" =~ ^[A-Za-z0-9][A-Za-z0-9][A-Za-z0-9]$ ]]
     then
 	return 0
@@ -152,18 +108,6 @@ function _check_valid_sid() { #quickdoc: Checks if an entered SID is valid or no
 }
 
 function _check_sid_exists() { #quickdoc: Checks if an entered SID exists in the reference table.
-
-    # Expanded documentation:
-    #
-    # Checks if an entered SID exists in the reference table in the router table
-    # file or not. It does so by searching for the entered SID in the router table
-    # using the grep command.
-    #
-    # Returns:
-    #
-    # 0    If the SID exists.
-    # 1    If the SID does not exist.
-
     if grep -i -q "$1" "$SAP_ROUT_TAB"
     then
 	return 0
