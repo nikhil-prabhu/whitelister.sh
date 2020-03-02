@@ -70,6 +70,9 @@ then
     RUN_PID=$(cat "$LOCKFILE" | tr -d '\n')
 fi
 
+# String in webdisptab after which new entries should be added
+WEB_DISP_TAB_PATTERN="# Script inserted entries"
+
 #############
 # FUNCTIONS #
 #############
@@ -125,4 +128,8 @@ function _get_system_details() { #quickdoc: Extracts system information from the
     DISP_PORT=$(echo "$SYS_INFO" | awk '{print $4}' | tr -d ',')
     # Gateway port
     GATW_PORT=$(echo "$SYS_INFO" | awk '{print $5}')
+}
+
+function _insert_entry_webdisptab() { #quickdoc: Inserts an entry into the temporary web dispatcher ACL file.
+    sed -i -e "/$WEB_DISP_TAB_PATTERN/a\\" -e "$1" "$TMP_ROUT_TAB"
 }
