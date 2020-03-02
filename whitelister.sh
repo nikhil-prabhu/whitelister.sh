@@ -133,3 +133,7 @@ function _get_system_details() { #quickdoc: Extracts system information from the
 function _insert_entry_webdisptab() { #quickdoc: Inserts an entry into the temporary web dispatcher ACL file.
     sed -i -e "/$WEB_DISP_TAB_PATTERN/a\\" -e "$1" "$TMP_ROUT_TAB"
 }
+
+function _insert_entry_saprouttab() { #quickdoc: Inserts an entry into the router table.
+    sed -i "\$a$1" "$TMP_ROUT_TAB"
+}
