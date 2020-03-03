@@ -110,6 +110,15 @@ function _duplicate_ip_in_session() { #quickdoc": Checks whether an IP address w
     fi
 }
 
+function duplicate_sid_in_session() { #quickdoc: Checks whether an entered SID was already entered in the current session.
+    if grep -Eiq "(^|\s)${1}($|\s)" "$TMP_SIDS"
+    then
+	return 0
+    else
+	return 1
+    fi
+}
+
 function _duplicate_entry_in_webdisptab() { #quickdoc: Checks whether information entered already exists in the webdisptab file.
     if grep -Eq "(^|\s)${1}($|\s)" "$TMP_WEBDISPTAB"
     then
