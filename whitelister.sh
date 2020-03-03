@@ -129,7 +129,7 @@ function _duplicate_entry_in_webdisptab() { #quickdoc: Checks whether informatio
 }
 
 function _duplicate_entry_in_saprouttab() { #quickdoc: Checks whether information entered already exists in the saprouttab file.
-    if grep -Eq "(^|\s)${1}($|\s)" "$TMP_SAPROUTTAB"
+    if grep -iq "$1    $2" "$TMP_SAPROUTTAB"
     then
 	return 0
     else
@@ -147,7 +147,7 @@ function _check_valid_sid() { #quickdoc: Checks if an entered SID is valid or no
 }
 
 function _check_sid_exists() { #quickdoc: Checks if an entered SID exists in the reference table.
-    if grep -i -q "$1" "$SAPROUTTAB"
+    if grep -i -q "$1:" "$SAPROUTTAB"
     then
 	return 0
     else
@@ -223,9 +223,14 @@ function _whitelister() { #quickdoc: Main whitelisting function.
 	    then
 		echo "You've already entered this IP address in the current session. Ignoring."
 	    else
-		if _duplicate_entry_in_webdisptab "$_ip_address"
+		if [ "$ACL_CHOICE" -eq 1 ] || [ "$ACL_CHOICE" -eq 2 ]
 		then
-		    echo "An entry with IP address $_ip_address already exists in the webdisptab file. Ignoring."
+		    if _duplicate_entry_in_webdisptab "$_ip_address"
+		    then
+			echo "An entry with IP address $_ip_address already exists in the webdisptab file. Ignoring."
+		    else
+			echo "$_ip_address" >> "$TMP_IPS"
+		    fi
 		else
 		    echo "$_ip_address" >> "$TMP_IPS"
 		fi
@@ -321,10 +326,15 @@ function _whitelister() { #quickdoc: Main whitelisting function.
 	    while read _sid
 	    do
 		_get_system_details "$_sid"
-		_saprouttab_entry="P\t$_ip_address\t$HOST_NAME\t$DISP_PORT\t# Entry: $_employee_id $SYS_DATE $_entry_info"
-		_insert_entry_saprouttab "$_saprouttab_entry"
-		_saprouttab_entry="P\t$_ip_address\t$HOST_NAME\t$GATW_PORT\t# Entry: $_employee_id $SYS_DATE $_entry_info"
-		_insert_entry_saprouttab "$_saprouttab_entry"
+		if _duplicate_entry_in_saprouttab "$_ip_address" "$HOST_NAME"
+		then
+		    echo "An entry with IP address $_ip_address and hostname $HOST_NAME already exists in the router table. Ignoring."
+		else
+		    _saprouttab_entry="P\t$_ip_address    $HOST_NAME\t$DISP_PORT\t# Entry: $_employee_id $SYS_DATE $_entry_info"
+		    _insert_entry_saprouttab "$_saprouttab_entry" "$HOST_NAME"
+		    _saprouttab_entry="P\t$_ip_address    $HOST_NAME\t$GATW_PORT\t# Entry: $_employee_id $SYS_DATE $_entry_info"
+		    _insert_entry_saprouttab "$_saprouttab_entry" "$HOST_NAME"
+		fi
 	    done < "$TMP_SIDS"
 	fi
     done < "$TMP_IPS"
