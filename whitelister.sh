@@ -101,7 +101,16 @@ function _check_valid_ipv4_address() { #quickdoc: Checks if an entered IPv4 addr
     fi
 }
 
-function _webdisptab_check_duplicate_entry() { #quickdoc: Checks whether information entered already exists in the webdisptab file.
+function _duplicate_ip_in_session() { #quickdoc": Checks whether an IP address was already entered in the current session.
+    if grep -Eq "(^|\s)${1}($|\s)" "$TMP_IPS"
+    then
+	return 0
+    else
+	return 1
+    fi
+}
+
+function _duplicate_entry_in_webdisptab() { #quickdoc: Checks whether information entered already exists in the webdisptab file.
     if grep -Eq "(^|\s)${1}($|\s)" "$TMP_WEBDISPTAB"
     then
 	return 0
@@ -109,7 +118,7 @@ function _webdisptab_check_duplicate_entry() { #quickdoc: Checks whether informa
 	return 1
 }
 
-function _saprouttab_check_duplicate_entry() { #quickdoc: Checks whether information entered already exists in the saprouttab file.
+function _duplicate_entry_in_saprouttab() { #quickdoc: Checks whether information entered already exists in the saprouttab file.
     if grep -Eq "(^|\s)${1}($|\s)" "$TMP_SAPROUTTAB"
     then
 	return 0
