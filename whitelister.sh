@@ -197,24 +197,28 @@ function _whitelister() { #quickdoc: Main whitelisting function.
 	exit 1
     fi
 
-    # Read SIDs
-    echo "Enter the SIDs [Press Ctrl-D when you're done]:"
-    while read _sid
-    do
-	if _check_valid_sid "$_sid"
-	then
-	    echo "$SID" >> "$TMP_SIDS"
-	else
-	    echo "INVALID SID"
-	fi
-    done
-
-    # Check if user has pressed Ctrl-D without entering any SIDs
-    if [ $(wc -l < "$TMP_SIDS") -eq 0 ]
+    # Check choice of ACL file
+    if [ "$ACL_CHOICE" -eq 1 ] || [ "$ACL_CHOICE" -eq 3 ]
     then
-	echo "No SIDs entered. Cleaning temporary files and quitting..."
-	_remove_temp_files
-	exit 1
+	# Read SIDs
+	echo "Enter the SIDs [Press Ctrl-D when you're done]:"
+	while read _sid
+	do
+	    if _check_valid_sid "$_sid"
+	    then
+		echo "$SID" >> "$TMP_SIDS"
+	    else
+		echo "INVALID SID"
+	    fi
+	done
+
+	# Check if user has pressed Ctrl-D without entering any SIDs
+	if [ $(wc -l < "$TMP_SIDS") -eq 0 ]
+	then
+	    echo "No SIDs entered. Cleaning temporary files and quitting..."
+	    _remove_temp_files
+	    exit 1
+	fi
     fi
 
     # Read employee ID
@@ -250,17 +254,23 @@ function _whitelister() { #quickdoc: Main whitelisting function.
     # Insert entry
     while read _ip_address
     do
-	_webdisptab_entry="P /*\t*\t*$_ip_address\t*\t# Entry:\t$_employee_id\t$SYS_DATE\t$_entry_info"
-	_insert_entry_webdisptab "$_webdisptab_entry"
+	if [ "$ACL_CHOICE" -eq 1 ] || [ "$ACL_CHOICE" -eq 2 ]
+	then
+	    _webdisptab_entry="P /*\t*\t*$_ip_address\t*\t# Entry:\t$_employee_id\t$SYS_DATE\t$_entry_info"
+	    _insert_entry_webdisptab "$_webdisptab_entry"
+	fi
 
-	while read _sid
-	do
-	    _get_system_details "$_sid"
-	    _saprouttab_entry="P\t$_ip_address\t$HOST_NAME\t$DISP_PORT\t# Entry: $_employee_id $SYS_DATE $_entry_info"
-	    _insert_entry_saprouttab "$_saprouttab_entry"
-	    _saprouttab_entry="P\t$_ip_address\t$HOST_NAME\t$GATW_PORT\t# Entry: $_employee_id $SYS_DATE $_entry_info"
-	    _insert_entry_saprouttab "$_saprouttab_entry"
-	done < "$TMP_SIDS"
+	if [ "$ACL_CHOICE" -eq 1 ] || [ "$ACL_CHOICE" -eq 3 ]
+	then
+	    while read _sid
+	    do
+		_get_system_details "$_sid"
+		_saprouttab_entry="P\t$_ip_address\t$HOST_NAME\t$DISP_PORT\t# Entry: $_employee_id $SYS_DATE $_entry_info"
+		_insert_entry_saprouttab "$_saprouttab_entry"
+		_saprouttab_entry="P\t$_ip_address\t$HOST_NAME\t$GATW_PORT\t# Entry: $_employee_id $SYS_DATE $_entry_info"
+		_insert_entry_saprouttab "$_saprouttab_entry"
+	    done < "$TMP_SIDS"
+	fi
     done < "$TMP_IPS"
 
     # Remove blank lines
@@ -293,6 +303,8 @@ do
 
     echo -en "\n> "
     read -n 1 ACL_CHOICE
+
+    echo ""
 
     if [ -z "$ACL_CHOICE" ]
     then
