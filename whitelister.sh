@@ -274,3 +274,5 @@ function _whitelister() { #quickdoc: Main whitelisting function.
     # Remove temporary files
     _remove_temp_files
 }
+
+_whitelister
