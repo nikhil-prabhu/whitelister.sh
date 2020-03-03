@@ -41,16 +41,16 @@ CURRENT_PID=$$
 LOCK_FILE="/tmp/$SCRIPT_NAME.lock"
 
 # Web dispatcher ACL file
-WEB_DISP_TAB="/usr/sap/WD2/whitelist/webdisptab_test"
+WEBDISPTAB="/usr/sap/WD2/whitelist/webdisptab_test"
 
 # Router table file
-SAP_ROUT_TAB="/usr/sap/WD2/whitelist/saprouttab_test"
+SAPROUTTAB="/usr/sap/WD2/whitelist/saprouttab_test"
 
 # Temporary web dispatcher file
-TMP_WEB_DISP_TAB="/tmp/$SCRIPT_NAME-webdisptab.temp"
+TMP_WEBDISPTAB="/tmp/$SCRIPT_NAME-webdisptab.temp"
 
 # Temporary router table file
-TMP_SAP_ROUT_TAB="/tmp/$SCRIPT_NAME-saprouttab.temp"
+TMP_SAPROUTTAB="/tmp/$SCRIPT_NAME-saprouttab.temp"
 
 # Temporary file to store IP addresses in
 TMP_IPS="/tmp/$SCRIPT_NAME-ips.temp"
@@ -59,37 +59,37 @@ TMP_IPS="/tmp/$SCRIPT_NAME-ips.temp"
 TMP_SIDS="/tmp/$SCRIPT_NAME-sids.temp"
 
 # Backup of web dispatcher ACL file
-BKP_WEB_DISP_TAB="$WEB_DISP_TAB-$SYS_TIME-$(echo $SYS_DATE | tr '/' '.').backup"
+BKP_WEBDISPTAB="$WEBDISPTAB-$SYS_TIME-$(echo $SYS_DATE | tr '/' '.').backup"
 
 # Backup of router table file
-BKP_SAP_ROUT_TAB="$SAP_ROUT_TAB-$SYS_TIME-$(echo $SYS_DATE | tr '/' '.').backup"
+BKP_SAPROUTTAB="$SAPROUTTAB-$SYS_TIME-$(echo $SYS_DATE | tr '/' '.').backup"
 
 # PID of other running instance (if any)
-if [ -f "$LOCKFILE" ]
+if [ -f "$LOCK_FILE" ]
 then
-    RUN_PID=$(cat "$LOCKFILE" | tr -d '\n')
+    RUN_PID=$(cat "$LOCK_FILE" | tr -d '\n')
 fi
 
 # String in webdisptab after which new entries should be added
-WEB_DISP_TAB_PATTERN="# Script inserted entries"
+WEBDISPTAB_PATTERN="# Script inserted entries"
 
 #############
 # FUNCTIONS #
 #############
 
 function _create_backups() { #quickdoc: Creates backups of ACL files.
-    cp "$WEB_DISP_TAB" "$BKP_WEB_DISP_TAB"
-    cp "$SAP_ROUT_TAB" "$BKP_SAP_ROUT_TAB"
+    cp "$WEBDISPTAB" "$BKP_WEBDISPTAB"
+    cp "$SAPROUTTAB" "$BKP_SAPROUTTAB"
 }
 
 function _create_temp_files() { #quickdoc: Creates temporary files to store data.
-    cp "$WEB_DISP_TAB" "$TMP_WEB_DISP_TAB"
-    cp "$SAP_ROUT_TAB" "$TMP_SAP_ROUT_TAB"
+    cp "$WEBDISPTAB" "$TMP_WEBDISPTAB"
+    cp "$SAPROUTTAB" "$TMP_SAPROUTTAB"
     touch "$TMP_IPS" "$TMP_SIDS"
 }
 
 function _remove_temp_files() { #quickdoc: Removes temporary files used by the script.
-    rm "$TMP_WEB_DISP_TAB" "$TMP_SAP_ROUT_TAB" "$TMP_IPS" "$TMP_SIDS"
+    rm "$TMP_WEBDISPTAB" "$TMP_SAPROUTTAB" "$TMP_IPS" "$TMP_SIDS"
 }
 
 function _check_valid_ipv4_address() { #quickdoc: Checks if an entered IPv4 address is valid or not.
@@ -111,7 +111,7 @@ function _check_valid_sid() { #quickdoc: Checks if an entered SID is valid or no
 }
 
 function _check_sid_exists() { #quickdoc: Checks if an entered SID exists in the reference table.
-    if grep -i -q "$1" "$SAP_ROUT_TAB"
+    if grep -i -q "$1" "$SAPROUTTAB"
     then
 	return 0
     else
@@ -121,7 +121,7 @@ function _check_sid_exists() { #quickdoc: Checks if an entered SID exists in the
 
 function _get_system_details() { #quickdoc: Extracts system information from the SID reference table.
     # System information
-    SYS_INFO=$(grep -i "$1" "$SAP_ROUT_TAB" | head -n 1)
+    SYS_INFO=$(grep -i "$1" "$SAPROUTTAB" | head -n 1)
     # Hostname
     HOST_NAME=$(echo "$SYS_INFO" | awk '{print $3}')
     # Dispatcher port
@@ -131,11 +131,11 @@ function _get_system_details() { #quickdoc: Extracts system information from the
 }
 
 function _insert_entry_webdisptab() { #quickdoc: Inserts an entry into the temporary web dispatcher ACL file.
-    sed -i -e "/$WEB_DISP_TAB_PATTERN/a\\" -e "$1" "$TMP_WEB_DISP_TAB"
+    sed -i -e "/$WEBDISPTAB_PATTERN/a\\" -e "$1" "$TMP_WEBDISPTAB"
 }
 
 function _insert_entry_saprouttab() { #quickdoc: Inserts an entry into the router table.
-    sed -i "\$a$1" "$TMP_SAP_ROUT_TAB"
+    sed -i "\$a$1" "$TMP_SAPROUTTAB"
 }
 
 function _remove_blank_lines() { #quickdoc: Removes blank lines from a file.
@@ -143,11 +143,11 @@ function _remove_blank_lines() { #quickdoc: Removes blank lines from a file.
 }
 
 function _update_webdisptab() { #quickdoc: Updates the entries in the webdisptab ACL file.
-    cat "$TMP_WEB_DISP_TAB" > "$WEB_DISP_TAB"
+    cat "$TMP_WEBDISPTAB" > "$WEBDISPTAB"
 }
 
 function _update_saprouttab() { #quickdoc: Updates the entries in the router table file.
-    cat "$TMP_SAP_ROUT_TAB" > "$SAP_ROUT_TAB"
+    cat "$TMP_SAPROUTTAB" > "$SAPROUTTAB"
 }
 
 function _whitelister() { #quickdoc: Main whitelisting function.
