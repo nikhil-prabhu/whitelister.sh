@@ -101,6 +101,42 @@ function _check_valid_ipv4_address() { #quickdoc: Checks if an entered IPv4 addr
     fi
 }
 
+function _duplicate_ip_in_session() { #quickdoc": Checks whether an IP address was already entered in the current session.
+    if grep -Eq "(^|\s)${1}($|\s)" "$TMP_IPS"
+    then
+	return 0
+    else
+	return 1
+    fi
+}
+
+function _duplicate_sid_in_session() { #quickdoc: Checks whether an entered SID was already entered in the current session.
+    if grep -Eiq "(^|\s)${1}($|\s)" "$TMP_SIDS"
+    then
+	return 0
+    else
+	return 1
+    fi
+}
+
+function _duplicate_entry_in_webdisptab() { #quickdoc: Checks whether information entered already exists in the webdisptab file.
+    if grep -Eq "(^|\s)${1}($|\s)" "$TMP_WEBDISPTAB"
+    then
+	return 0
+    else
+	return 1
+    fi
+}
+
+function _duplicate_entry_in_saprouttab() { #quickdoc: Checks whether information entered already exists in the saprouttab file.
+    if grep -iq "$1    $2" "$TMP_SAPROUTTAB"
+    then
+	return 0
+    else
+	return 1
+    fi
+}
+
 function _check_valid_sid() { #quickdoc: Checks if an entered SID is valid or not.
     if [[ "$1" =~ ^[A-Za-z0-9][A-Za-z0-9][A-Za-z0-9]$ ]]
     then
@@ -111,7 +147,7 @@ function _check_valid_sid() { #quickdoc: Checks if an entered SID is valid or no
 }
 
 function _check_sid_exists() { #quickdoc: Checks if an entered SID exists in the reference table.
-    if grep -i -q "$1" "$SAPROUTTAB"
+    if grep -i -q "$1:" "$SAPROUTTAB"
     then
 	return 0
     else
@@ -183,9 +219,24 @@ function _whitelister() { #quickdoc: Main whitelisting function.
     do
 	if _check_valid_ipv4_address "$_ip_address"
 	then
-	    echo "$_ip_address" >> "$TMP_IPS"
+	    if _duplicate_ip_in_session "$_ip_address"
+	    then
+		echo "You've already entered this IP address in the current session. Ignoring."
+	    else
+		if [ "$ACL_CHOICE" -eq 1 ] || [ "$ACL_CHOICE" -eq 2 ]
+		then
+		    if _duplicate_entry_in_webdisptab "$_ip_address"
+		    then
+			echo "An entry with IP address $_ip_address already exists in the webdisptab file. Ignoring."
+		    else
+			echo "$_ip_address" >> "$TMP_IPS"
+		    fi
+		else
+		    echo "$_ip_address" >> "$TMP_IPS"
+		fi
+	    fi
 	else
-	    echo "INVALID IP ADDRESS."
+	    echo "Invalid IP address: $_ip_address. Ignoring."
 	fi
     done
 
@@ -206,9 +257,19 @@ function _whitelister() { #quickdoc: Main whitelisting function.
 	do
 	    if _check_valid_sid "$_sid"
 	    then
-		echo "$SID" >> "$TMP_SIDS"
+		if _check_sid_exists "$_sid"
+		then
+		    if _duplicate_sid_in_session "$_sid"
+		    then
+			echo "You've already entered this SID in the current session. Ignoring."
+		    else
+			echo "$_sid" >> "$TMP_SIDS"
+		    fi
+		else
+		    echo "The SID $_sid does not exist in the saprouttab reference table. Ignoring."
+		fi
 	    else
-		echo "INVALID SID"
+		echo "Invalid SID: $_sid. Ignoring."
 	    fi
 	done
 
@@ -256,7 +317,7 @@ function _whitelister() { #quickdoc: Main whitelisting function.
     do
 	if [ "$ACL_CHOICE" -eq 1 ] || [ "$ACL_CHOICE" -eq 2 ]
 	then
-	    _webdisptab_entry="P /*\t*\t*$_ip_address\t*\t# Entry:\t$_employee_id\t$SYS_DATE\t$_entry_info"
+	    _webdisptab_entry="P /*\t*\t*\t$_ip_address\t*\t# Entry:\t$_employee_id\t$SYS_DATE\t$_entry_info"
 	    _insert_entry_webdisptab "$_webdisptab_entry"
 	fi
 
@@ -265,15 +326,22 @@ function _whitelister() { #quickdoc: Main whitelisting function.
 	    while read _sid
 	    do
 		_get_system_details "$_sid"
-		_saprouttab_entry="P\t$_ip_address\t$HOST_NAME\t$DISP_PORT\t# Entry: $_employee_id $SYS_DATE $_entry_info"
-		_insert_entry_saprouttab "$_saprouttab_entry"
-		_saprouttab_entry="P\t$_ip_address\t$HOST_NAME\t$GATW_PORT\t# Entry: $_employee_id $SYS_DATE $_entry_info"
-		_insert_entry_saprouttab "$_saprouttab_entry"
+		if _duplicate_entry_in_saprouttab "$_ip_address" "$HOST_NAME"
+		then
+		    echo "An entry with IP address $_ip_address and hostname $HOST_NAME already exists in the router table. Ignoring."
+		else
+		    _saprouttab_entry="P\t$_ip_address    $HOST_NAME\t$DISP_PORT\t# Entry: $_employee_id $SYS_DATE $_entry_info"
+		    _insert_entry_saprouttab "$_saprouttab_entry" "$HOST_NAME"
+		    _saprouttab_entry="P\t$_ip_address    $HOST_NAME\t$GATW_PORT\t# Entry: $_employee_id $SYS_DATE $_entry_info"
+		    _insert_entry_saprouttab "$_saprouttab_entry" "$HOST_NAME"
+		fi
 	    done < "$TMP_SIDS"
 	fi
     done < "$TMP_IPS"
 
     # Remove blank lines
+    _remove_blank_lines "$TMP_WEBDISPTAB"
+    _remove_blank_lines "$TMP_SAPROUTTAB"
 
     # Update webdisptab and saprouttab
     _update_webdisptab
