@@ -168,8 +168,6 @@ function _whitelister() { #quickdoc: Main whitelisting function.
     local _webdisptab_entry
     # saprouttab entry format
     local _saprouttab_entry
-    
-    echo "WHITELISTER.SH"
 
     # Create backups
     _create_backups
@@ -275,4 +273,34 @@ function _whitelister() { #quickdoc: Main whitelisting function.
     _remove_temp_files
 }
 
+################
+# MAIN SECTION #
+################
+
+# Banner
+echo -e "####################
+#  WHITELISTER.SH  #
+####################\n"
+
+# Prompt user for choice of ACL
+while :
+do
+    echo -e "Which files would you like to make entries into?\n"
+
+    echo "1. Both (webdisptab and saprouttab)."
+    echo "2. Only web dispatcher (webdisptab)."
+    echo "3. Only sap router table (saprouttab)."
+
+    echo -en "\n> "
+    read -n 1 ACL_CHOICE
+
+    if [ -z "$ACL_CHOICE" ]
+    then
+	echo -e "\nPlease make a choice.\n"
+    else
+	break
+    fi
+done
+
+# Call main whitelister process
 _whitelister
