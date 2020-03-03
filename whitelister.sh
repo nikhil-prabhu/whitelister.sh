@@ -131,11 +131,11 @@ function _get_system_details() { #quickdoc: Extracts system information from the
 }
 
 function _insert_entry_webdisptab() { #quickdoc: Inserts an entry into the temporary web dispatcher ACL file.
-    sed -i -e "/$WEB_DISP_TAB_PATTERN/a\\" -e "$1" "$TMP_ROUT_TAB"
+    sed -i -e "/$WEB_DISP_TAB_PATTERN/a\\" -e "$1" "$TMP_WEB_DISP_TAB"
 }
 
 function _insert_entry_saprouttab() { #quickdoc: Inserts an entry into the router table.
-    sed -i "\$a$1" "$TMP_ROUT_TAB"
+    sed -i "\$a$1" "$TMP_SAP_ROUT_TAB"
 }
 
 function _remove_blank_lines() { #quickdoc: Removes blank lines from a file.
@@ -147,7 +147,7 @@ function _update_webdisptab() { #quickdoc: Updates the entries in the webdisptab
 }
 
 function _update_saprouttab() { #quickdoc: Updates the entries in the router table file.
-    cat "$TMP_ROUT_TAB" > "$SAP_ROUT_TAB"
+    cat "$TMP_SAP_ROUT_TAB" > "$SAP_ROUT_TAB"
 }
 
 function _whitelister() { #quickdoc: Main whitelisting function.
