@@ -125,6 +125,7 @@ function _duplicate_entry_in_webdisptab() { #quickdoc: Checks whether informatio
 	return 0
     else
 	return 1
+    fi
 }
 
 function _duplicate_entry_in_saprouttab() { #quickdoc: Checks whether information entered already exists in the saprouttab file.
@@ -218,9 +219,19 @@ function _whitelister() { #quickdoc: Main whitelisting function.
     do
 	if _check_valid_ipv4_address "$_ip_address"
 	then
-	    echo "$_ip_address" >> "$TMP_IPS"
+	    if _duplicate_ip_in_session "$_ip_address"
+	    then
+		echo "You've already entered this IP address in the current session. Ignoring."
+	    else
+		if _duplicate_entry_in_webdisptab "$_ip_address"
+		then
+		    echo "An entry with IP address $_ip_address already exists in the webdisptab file. Ignoring."
+		else
+		    echo "$_ip_address" >> "$TMP_IPS"
+		fi
+	    fi
 	else
-	    echo "INVALID IP ADDRESS."
+	    echo "Invalid IP address: $_ip_address. Ignoring."
 	fi
     done
 
@@ -291,7 +302,7 @@ function _whitelister() { #quickdoc: Main whitelisting function.
     do
 	if [ "$ACL_CHOICE" -eq 1 ] || [ "$ACL_CHOICE" -eq 2 ]
 	then
-	    _webdisptab_entry="P /*\t*\t*$_ip_address\t*\t# Entry:\t$_employee_id\t$SYS_DATE\t$_entry_info"
+	    _webdisptab_entry="P /*\t*\t*\t$_ip_address\t*\t# Entry:\t$_employee_id\t$SYS_DATE\t$_entry_info"
 	    _insert_entry_webdisptab "$_webdisptab_entry"
 	fi
 
