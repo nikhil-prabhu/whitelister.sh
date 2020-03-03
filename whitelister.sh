@@ -149,3 +149,128 @@ function _update_webdisptab() { #quickdoc: Updates the entries in the webdisptab
 function _update_saprouttab() { #quickdoc: Updates the entries in the router table file.
     cat "$TMP_ROUT_TAB" > "$SAP_ROUT_TAB"
 }
+
+function _whitelister() { #quickdoc: Main whitelisting function.
+
+    ###################
+    # LOCAL VARIABLES #
+    ###################
+
+    # IP address
+    local _ip_address
+    # SID
+    local _sid
+    # Employee ID
+    local _employee_id
+    # Entry information
+    local _entry_info
+    # webdisptab entry format
+    local _webdisptab_entry
+    # saprouttab entry format
+    local _saprouttab_entry
+    
+    echo "WHITELISTER.SH"
+
+    # Create backups
+    _create_backups
+
+    echo "Press Ctrl-C at any time to exit the script."
+
+    # Create temporary files
+    _create_temp_files
+
+    # Read IP addresses
+    echo "Enter the IP addresses [Press Ctrl-D when you're done]:"
+    while read _ip_address
+    do
+	if _check_valid_ipv4_address "$_ip_address"
+	then
+	    echo "$_ip_address" >> "$TMP_IPS"
+	else
+	    echo "INVALID IP ADDRESS."
+	fi
+    done
+
+    # Check if user has pressed Ctrl-D without entering any IP addresses
+    if [ $(wc -l < "$TMP_IPS") -eq 0 ]
+    then
+	echo "No IP addresses entered. Cleaning temporary files and quitting..."
+	_remove_temp_files
+	exit 1
+    fi
+
+    # Read SIDs
+    echo "Enter the SIDs [Press Ctrl-D when you're done]:"
+    while read _sid
+    do
+	if _check_valid_sid "$_sid"
+	then
+	    echo "$SID" >> "$TMP_SIDS"
+	else
+	    echo "INVALID SID"
+	fi
+    done
+
+    # Check if user has pressed Ctrl-D without entering any SIDs
+    if [ $(wc -l < "$TMP_SIDS") -eq 0 ]
+    then
+	echo "No SIDs entered. Cleaning temporary files and quitting..."
+	_remove_temp_files
+	exit 1
+    fi
+
+    # Read employee ID
+    while :
+    do
+	echo "Enter employee ID:"
+	read _employee_id
+
+	# Enforce that employee id should be non-empty
+	if [ -z "$_employee_id" ]
+	then
+	    echo "Employee ID cannot be empty."
+	else
+	    break
+	fi
+    done
+
+    # Read entry information
+    while :
+    do
+	echo "Enter entry information:"
+	read _entry_info
+
+	# Enforce that entry information should be non-empty
+	if [ -z "$_entry_info" ]
+	then
+	    echo "Entry information cannot be empty."
+	else
+	    break
+	fi
+    done
+
+    # Insert entry
+    while read _ip_address
+    do
+	_webdisptab_entry="P /*\t*\t*$_ip_address\t*\t# Entry:\t$_employee_id\t$SYS_DATE\t$_entry_info"
+	_insert_entry_webdisptab "$_webdisptab_entry"
+
+	while read _sid
+	do
+	    _get_system_details "$_sid"
+	    _saprouttab_entry="P\t$_ip_address\t$HOST_NAME\t$DISP_PORT\t# Entry: $_employee_id $SYS_DATE $_entry_info"
+	    _insert_entry_saprouttab "$_saprouttab_entry"
+	    _saprouttab_entry="P\t$_ip_address\t$HOST_NAME\t$GATW_PORT\t# Entry: $_employee_id $SYS_DATE $_entry_info"
+	    _insert_entry_saprouttab "$_saprouttab_entry"
+	done < "$TMP_SIDS"
+    done < "$TMP_IPS"
+
+    # Remove blank lines
+
+    # Update webdisptab and saprouttab
+    _update_webdisptab
+    _update_saprouttab
+
+    # Remove temporary files
+    _remove_temp_files
+}
