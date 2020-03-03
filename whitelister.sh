@@ -110,7 +110,7 @@ function _duplicate_ip_in_session() { #quickdoc": Checks whether an IP address w
     fi
 }
 
-function duplicate_sid_in_session() { #quickdoc: Checks whether an entered SID was already entered in the current session.
+function _duplicate_sid_in_session() { #quickdoc: Checks whether an entered SID was already entered in the current session.
     if grep -Eiq "(^|\s)${1}($|\s)" "$TMP_SIDS"
     then
 	return 0
@@ -252,9 +252,19 @@ function _whitelister() { #quickdoc: Main whitelisting function.
 	do
 	    if _check_valid_sid "$_sid"
 	    then
-		echo "$SID" >> "$TMP_SIDS"
+		if _check_sid_exists "$_sid"
+		then
+		    if _duplicate_sid_in_session "$_sid"
+		    then
+			echo "You've already entered this SID in the current session. Ignoring."
+		    else
+			echo "$_sid" >> "$TMP_SIDS"
+		    fi
+		else
+		    echo "The SID $_sid does not exist in the saprouttab reference table. Ignoring."
+		fi
 	    else
-		echo "INVALID SID"
+		echo "Invalid SID: $_sid. Ignoring."
 	    fi
 	done
 
@@ -320,6 +330,8 @@ function _whitelister() { #quickdoc: Main whitelisting function.
     done < "$TMP_IPS"
 
     # Remove blank lines
+    _remove_blank_lines "$TMP_WEBDISPTAB"
+    _remove_blank_lines "$TMP_SAPROUTTAB"
 
     # Update webdisptab and saprouttab
     _update_webdisptab
