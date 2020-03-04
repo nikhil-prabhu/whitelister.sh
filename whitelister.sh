@@ -18,7 +18,6 @@
 #                                                                                  #
 #                  https://github.com/icy/bash-coding-style                        #
 #                                                                                  #
-#                                                                                  #
 ####################################################################################
 
 ####################
@@ -77,8 +76,8 @@ WEBDISPTAB_PATTERN="# Script inserted entries"
 RESET='\033[0m'
 BLINK='\033[5m'
 BOLD='\033[1m'
-YELLOW='\033[0;33m'
-GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+GREEN='\033[1;32m'
 
 #############
 # FUNCTIONS #
@@ -214,8 +213,6 @@ function _whitelister() { #quickdoc: Main whitelisting function.
 
     # Create backups
     _create_backups
-
-    echo -e "${BLINK}Press Ctrl-C at any time to exit the script.${RESET}"
 
     # Create temporary files
     _create_temp_files
@@ -366,6 +363,13 @@ function _whitelister() { #quickdoc: Main whitelisting function.
     _remove_temp_files
 }
 
+######################
+# INTERRUPT HANDLING #
+######################
+
+# Remove temporary files on interrupt
+trap "echo -e \"\n${YELLOW}Script interrupted. Removing temporary files and quitting...${RESET}\n\" ; _remove_temp_files ; exec 2> /dev/tty ; exit 1" SIGINT SIGTERM
+
 ################
 # MAIN SECTION #
 ################
@@ -374,9 +378,11 @@ function _whitelister() { #quickdoc: Main whitelisting function.
 exec 2> /dev/null
 
 # Banner
-echo -e "\n       ${BOLD}####################
+echo -e "\n       ${GREEN}####################
        #  WHITELISTER.SH  #
        ####################\n${RESET}"
+
+echo -e "${BLINK}Press Ctrl-C at any time to exit the script.${RESET}\n"
 
 # Prompt user for choice of ACL
 while :
