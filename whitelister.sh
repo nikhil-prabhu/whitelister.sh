@@ -370,6 +370,9 @@ function _whitelister() { #quickdoc: Main whitelisting function.
 # MAIN SECTION #
 ################
 
+# Discard output from stderr
+exec 2> /dev/null
+
 # Banner
 echo -e "\n       ${BOLD}####################
        #  WHITELISTER.SH  #
