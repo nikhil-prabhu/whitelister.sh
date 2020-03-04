@@ -73,6 +73,13 @@ fi
 # String in webdisptab after which new entries should be added
 WEBDISPTAB_PATTERN="# Script inserted entries"
 
+# Colors
+RESET='\033[0m'
+BLINK='\033[5m'
+BOLD='\033[1m'
+YELLOW='\033[0;33m'
+GREEN='\033[0;32m'
+
 #############
 # FUNCTIONS #
 #############
@@ -208,26 +215,26 @@ function _whitelister() { #quickdoc: Main whitelisting function.
     # Create backups
     _create_backups
 
-    echo "Press Ctrl-C at any time to exit the script."
+    echo -e "${BLINK}Press Ctrl-C at any time to exit the script.${RESET}"
 
     # Create temporary files
     _create_temp_files
 
     # Read IP addresses
-    echo "Enter the IP addresses [Press Ctrl-D when you're done]:"
+    echo -e "\n${BOLD}Enter the IP addresses [Press Ctrl-D when you're done]:${RESET}\n"
     while read _ip_address
     do
 	if _check_valid_ipv4_address "$_ip_address"
 	then
 	    if _duplicate_ip_in_session "$_ip_address"
 	    then
-		echo "You've already entered this IP address in the current session. Ignoring."
+		echo -e "${YELLOW}You've already entered this IP address in the current session. Ignoring.${RESET}"
 	    else
 		if [ "$ACL_CHOICE" -eq 1 ] || [ "$ACL_CHOICE" -eq 2 ]
 		then
 		    if _duplicate_entry_in_webdisptab "$_ip_address"
 		    then
-			echo "An entry with IP address $_ip_address already exists in the webdisptab file. Ignoring."
+			echo -e "${YELLOW}An entry with IP address $_ip_address already exists in the webdisptab file. Ignoring.${RESET}"
 		    else
 			echo "$_ip_address" >> "$TMP_IPS"
 		    fi
@@ -236,23 +243,25 @@ function _whitelister() { #quickdoc: Main whitelisting function.
 		fi
 	    fi
 	else
-	    echo "Invalid IP address: $_ip_address. Ignoring."
+	    echo -e "${YELLOW}Invalid IP address: $_ip_address. Ignoring.${RESET}"
 	fi
     done
 
     # Check if user has pressed Ctrl-D without entering any IP addresses
     if [ $(wc -l < "$TMP_IPS") -eq 0 ]
     then
-	echo "No IP addresses entered. Cleaning temporary files and quitting..."
+	echo -e "${YELLOW}No IP addresses entered. Cleaning temporary files and quitting...${RESET}\n"
 	_remove_temp_files
 	exit 1
     fi
 
+    echo ""
+    
     # Check choice of ACL file
     if [ "$ACL_CHOICE" -eq 1 ] || [ "$ACL_CHOICE" -eq 3 ]
     then
 	# Read SIDs
-	echo "Enter the SIDs [Press Ctrl-D when you're done]:"
+	echo -e "${BOLD}Enter the SIDs [Press Ctrl-D when you're done]:${RESET}\n"
 	while read _sid
 	do
 	    if _check_valid_sid "$_sid"
@@ -261,52 +270,56 @@ function _whitelister() { #quickdoc: Main whitelisting function.
 		then
 		    if _duplicate_sid_in_session "$_sid"
 		    then
-			echo "You've already entered this SID in the current session. Ignoring."
+			echo -e "${YELLOW}You've already entered this SID in the current session. Ignoring.${RESET}"
 		    else
 			echo "$_sid" >> "$TMP_SIDS"
 		    fi
 		else
-		    echo "The SID $_sid does not exist in the saprouttab reference table. Ignoring."
+		    echo -e "${YELLOW}The SID $_sid does not exist in the saprouttab reference table. Ignoring.${RESET}"
 		fi
 	    else
-		echo "Invalid SID: $_sid. Ignoring."
+		echo -e "${YELLOW}Invalid SID: $_sid. Ignoring.${RESET}"
 	    fi
 	done
 
 	# Check if user has pressed Ctrl-D without entering any SIDs
 	if [ $(wc -l < "$TMP_SIDS") -eq 0 ]
 	then
-	    echo "No SIDs entered. Cleaning temporary files and quitting..."
+	    echo -e "${YELLOW}No SIDs entered. Cleaning temporary files and quitting...${RESET}"
 	    _remove_temp_files
 	    exit 1
 	fi
     fi
 
+    echo ""
+
     # Read employee ID
     while :
     do
-	echo "Enter employee ID:"
+	echo -e "${BOLD}Enter employee ID:${RESET}\n"
 	read _employee_id
 
 	# Enforce that employee id should be non-empty
 	if [ -z "$_employee_id" ]
 	then
-	    echo "Employee ID cannot be empty."
+	    echo -e "${YELLOW}Employee ID cannot be empty.${RESET}\n"
 	else
 	    break
 	fi
     done
 
+    echo ""
+
     # Read entry information
     while :
     do
-	echo "Enter entry information:"
+	echo -e "${BOLD}Enter entry information:${RESET}\n"
 	read _entry_info
 
 	# Enforce that entry information should be non-empty
 	if [ -z "$_entry_info" ]
 	then
-	    echo "Entry information cannot be empty."
+	    echo -e "${YELLOW}Entry information cannot be empty.${RESET}\n"
 	else
 	    break
 	fi
@@ -328,7 +341,7 @@ function _whitelister() { #quickdoc: Main whitelisting function.
 		_get_system_details "$_sid"
 		if _duplicate_entry_in_saprouttab "$_ip_address" "$HOST_NAME"
 		then
-		    echo "An entry with IP address $_ip_address and hostname $HOST_NAME already exists in the router table. Ignoring."
+		    echo -e "${YELLOW}An entry with IP address $_ip_address and hostname $HOST_NAME already exists in the router table. Ignoring.${RESET}"
 		else
 		    _saprouttab_entry="P\t$_ip_address    $HOST_NAME\t$DISP_PORT\t# Entry: $_employee_id $SYS_DATE $_entry_info"
 		    _insert_entry_saprouttab "$_saprouttab_entry" "$HOST_NAME"
@@ -347,6 +360,8 @@ function _whitelister() { #quickdoc: Main whitelisting function.
     _update_webdisptab
     _update_saprouttab
 
+    echo -e "${GREEN}Entries added successfully.${RESET}\n"
+
     # Remove temporary files
     _remove_temp_files
 }
@@ -356,23 +371,23 @@ function _whitelister() { #quickdoc: Main whitelisting function.
 ################
 
 # Banner
-echo -e "####################
-#  WHITELISTER.SH  #
-####################\n"
+echo -e "\n       ${BOLD}####################
+       #  WHITELISTER.SH  #
+       ####################\n${RESET}"
 
 # Prompt user for choice of ACL
 while :
 do
-    echo -e "Which files would you like to make entries into?\n"
+    echo -e "${BOLD}Which files would you like to make entries into?${RESET}\n"
 
-    echo "1. Both (webdisptab and saprouttab)."
-    echo "2. Only web dispatcher (webdisptab)."
-    echo "3. Only sap router table (saprouttab)."
+    echo -e "${BOLD}1.${RESET} Both (webdisptab and saprouttab)."
+    echo -e "${BOLD}2.${RESET} Only web dispatcher (webdisptab)."
+    echo -e "${BOLD}3.${RESET} Only sap router table (saprouttab)."
 
-    echo -en "\n> "
+    echo -en "\n${BOLD}>${RESET} "
     read -n 1 ACL_CHOICE
 
-    echo ""
+    echo -e "\n"
 
     if [ -z "$ACL_CHOICE" ]
     then
