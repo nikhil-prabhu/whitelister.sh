@@ -398,7 +398,7 @@ do
 
     echo -e "\n"
 
-    if [ -z "$ACL_CHOICE" ]
+    if [ -z "$ACL_CHOICE" ] || [[ ! ("$ACL_CHOICE" =~ ^[123]$) ]]
     then
 	echo -e "\nPlease make a choice.\n"
     else
