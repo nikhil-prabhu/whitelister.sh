@@ -378,9 +378,9 @@ trap "echo -e \"\n${YELLOW}Script interrupted. Removing temporary files and quit
 exec 2> /dev/null
 
 # Banner
-echo -e "\n       ${GREEN}####################
-       #  WHITELISTER.SH  #
-       ####################\n${RESET}"
+echo -e "\n       ${GREEN}####################${RESET}"
+echo -e "       ${GREEN}#  WHITELISTER.SH  #${RESET}"
+echo -e "       ${GREEN}####################\n${RESET}"
 
 echo -e "${BLINK}Press Ctrl-C at any time to exit the script.${RESET}\n"
 
