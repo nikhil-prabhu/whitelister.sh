@@ -173,11 +173,25 @@ function _get_system_details() { #quickdoc: Extracts system information from the
 }
 
 function _insert_entry_webdisptab() { #quickdoc: Inserts an entry into the temporary web dispatcher ACL file.
-    sed -i -e "/$WEBDISPTAB_PATTERN/a\\" -e "$1" "$TMP_WEBDISPTAB"
+    # If entry already exists, append to entry
+    if grep -Eq "##-- $2: .* --##" "$TMP_WEBDISPTAB"
+    then
+	sed -i -e "/##-- $2: .* --##/a\\" -e "$1" "$TMP_WEBDISPTAB"
+    else
+	sed -i -e "/$WEBDISPTAB_PATTERN/a\\" -e "##-- $2: $3 --##" "$TMP_WEBDISPTAB"
+	sed -i -e "/##-- $2: .* --##/a\\" -e "$1" "$TMP_WEBDISPTAB"
+    fi
 }
 
 function _insert_entry_saprouttab() { #quickdoc: Inserts an entry into the router table.
-    sed -i "\$a$1" "$TMP_SAPROUTTAB"
+    # If entry already exists, append to entry
+    if grep -Eq "##-- $3: .* --##" "$TMP_SAPROUTTAB"
+    then
+	sed -i -e "/##-- $3: .* --##/a\\" -e "$1" "$TMP_SAPROUTTAB"
+    else
+	sed -i -e "\$a##-- $3: $4 --##" "$TMP_SAPROUTTAB"
+	sed -i -e "/##-- $3: .* --##/a\\" -e "$1" "$TMP_SAPROUTTAB"
+    fi
 }
 
 function _remove_blank_lines() { #quickdoc: Removes blank lines from a file.
@@ -198,6 +212,10 @@ function _whitelister() { #quickdoc: Main whitelisting function.
     # LOCAL VARIABLES #
     ###################
 
+    # Certification ID
+    local _certification_id
+    # Partner name
+    local _partner_name
     # IP address
     local _ip_address
     # SID
@@ -217,8 +235,18 @@ function _whitelister() { #quickdoc: Main whitelisting function.
     # Create temporary files
     _create_temp_files
 
+    # Read certification ID
+    echo -e "\n${BOLD}Enter the certification ID:${RESET}\n"
+    read _certification_id
+
+    # Read partner name
+    echo -e "\n${BOLD}Enter the partner name:${RESET}\n"
+    read _partner_name
+
+    echo ""
+
     # Read IP addresses
-    echo -e "\n${BOLD}Enter the IP addresses [Press Ctrl-D when you're done]:${RESET}\n"
+    echo -e "${BOLD}Enter the IP addresses [Press Ctrl-D when you're done]:${RESET}\n"
     while read _ip_address
     do
 	if _check_valid_ipv4_address "$_ip_address"
@@ -328,7 +356,7 @@ function _whitelister() { #quickdoc: Main whitelisting function.
 	if [ "$ACL_CHOICE" -eq 1 ] || [ "$ACL_CHOICE" -eq 2 ]
 	then
 	    _webdisptab_entry="P /*\t*\t*\t$_ip_address\t*\t# Entry:\t$_employee_id\t$SYS_DATE\t$_entry_info"
-	    _insert_entry_webdisptab "$_webdisptab_entry"
+	    _insert_entry_webdisptab "$_webdisptab_entry" "$_certification_id" "$_partner_name"
 	fi
 
 	if [ "$ACL_CHOICE" -eq 1 ] || [ "$ACL_CHOICE" -eq 3 ]
@@ -341,9 +369,9 @@ function _whitelister() { #quickdoc: Main whitelisting function.
 		    echo -e "${YELLOW}An entry with IP address $_ip_address and hostname $HOST_NAME already exists in the router table. Ignoring.${RESET}"
 		else
 		    _saprouttab_entry="P\t$_ip_address    $HOST_NAME\t$DISP_PORT\t# Entry: $_employee_id $SYS_DATE $_entry_info"
-		    _insert_entry_saprouttab "$_saprouttab_entry" "$HOST_NAME"
+		    _insert_entry_saprouttab "$_saprouttab_entry" "$HOST_NAME" "$_certification_id" "$_partner_name"
 		    _saprouttab_entry="P\t$_ip_address    $HOST_NAME\t$GATW_PORT\t# Entry: $_employee_id $SYS_DATE $_entry_info"
-		    _insert_entry_saprouttab "$_saprouttab_entry" "$HOST_NAME"
+		    _insert_entry_saprouttab "$_saprouttab_entry" "$HOST_NAME" "$_certification_id" "$_partner_name"
 		fi
 	    done < "$TMP_SIDS"
 	fi
