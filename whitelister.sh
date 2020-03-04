@@ -355,7 +355,7 @@ function _whitelister() { #quickdoc: Main whitelisting function.
     do
 	if [ "$ACL_CHOICE" -eq 1 ] || [ "$ACL_CHOICE" -eq 2 ]
 	then
-	    _webdisptab_entry="P /*\t*\t*\t$_ip_address\t*\t# Entry:\t$_employee_id\t$SYS_DATE\t$_entry_info"
+	    _webdisptab_entry="P    /*    *    *    $_ip_address    *    # Entry: $_employee_id $SYS_DATE $_entry_info"
 	    _insert_entry_webdisptab "$_webdisptab_entry" "$_certification_id" "$_partner_name"
 	fi
 
@@ -368,9 +368,9 @@ function _whitelister() { #quickdoc: Main whitelisting function.
 		then
 		    echo -e "${YELLOW}An entry with IP address $_ip_address and hostname $HOST_NAME already exists in the router table. Ignoring.${RESET}"
 		else
-		    _saprouttab_entry="P\t$_ip_address    $HOST_NAME\t$DISP_PORT\t# Entry: $_employee_id $SYS_DATE $_entry_info"
+		    _saprouttab_entry="P    $_ip_address    $HOST_NAME    $DISP_PORT    # Entry: $_employee_id $SYS_DATE $_entry_info"
 		    _insert_entry_saprouttab "$_saprouttab_entry" "$HOST_NAME" "$_certification_id" "$_partner_name"
-		    _saprouttab_entry="P\t$_ip_address    $HOST_NAME\t$GATW_PORT\t# Entry: $_employee_id $SYS_DATE $_entry_info"
+		    _saprouttab_entry="P    $_ip_address    $HOST_NAME    $GATW_PORT    # Entry: $_employee_id $SYS_DATE $_entry_info"
 		    _insert_entry_saprouttab "$_saprouttab_entry" "$HOST_NAME" "$_certification_id" "$_partner_name"
 		fi
 	    done < "$TMP_SIDS"
