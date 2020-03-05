@@ -63,12 +63,6 @@ BKP_WEBDISPTAB="$WEBDISPTAB-$SYS_TIME-$(echo $SYS_DATE | tr '/' '.').backup"
 # Backup of router table file
 BKP_SAPROUTTAB="$SAPROUTTAB-$SYS_TIME-$(echo $SYS_DATE | tr '/' '.').backup"
 
-# PID of other running instance (if any)
-if [ -f "$LOCK_FILE" ]
-then
-    RUN_PID=$(cat "$LOCK_FILE" | tr -d '\n')
-fi
-
 # String in webdisptab after which new entries should be added
 WEBDISPTAB_PATTERN="# Script inserted entries"
 
@@ -94,8 +88,16 @@ function _create_temp_files() { #quickdoc: Creates temporary files to store data
     touch "$TMP_IPS" "$TMP_SIDS"
 }
 
+function _lock_instance() { #quickdoc: Locks the current script instance.
+    touch "$LOCK_FILE"
+}
+
 function _remove_temp_files() { #quickdoc: Removes temporary files used by the script.
     rm "$TMP_WEBDISPTAB" "$TMP_SAPROUTTAB" "$TMP_IPS" "$TMP_SIDS"
+}
+
+function _remove_lock() { #quickdoc: Removes the script instance lock.
+    rm "$LOCK_FILE"
 }
 
 function _valid_ipv4_address() { #quickdoc: Checks if an entered IPv4 address is valid or not.
@@ -425,6 +427,9 @@ function _whitelister() { #quickdoc: Main whitelisting function.
 
     # Remove temporary files
     _remove_temp_files
+
+    # Remove script instance lock
+    _remove_lock
 }
 
 ######################
@@ -432,7 +437,7 @@ function _whitelister() { #quickdoc: Main whitelisting function.
 ######################
 
 # Remove temporary files on interrupt
-trap "echo -e \"\n${YELLOW}Script interrupted. Removing temporary files and quitting...${RESET}\n\" ; _remove_temp_files ; exec 2> /dev/tty ; exit 1" SIGINT SIGTERM
+trap "echo -e \"\n${YELLOW}Script interrupted. Removing temporary files and quitting...${RESET}\n\" ; _remove_temp_files ; _remove_lock ; exec 2> /dev/tty ; exit 1" SIGINT SIGTERM
 
 ################
 # MAIN SECTION #
@@ -448,27 +453,38 @@ echo -e "       ${GREEN}####################\n${RESET}"
 
 echo -e "${BLINK}Press Ctrl-C at any time to exit the script.${RESET}\n"
 
-# Prompt user for choice of ACL
-while :
-do
-    echo -e "${BOLD}Which files would you like to make entries into?${RESET}\n"
+# Check if another instance of the script is running
+if [ -f "$LOCK_FILE" ]
+then
+    echo -e "${YELLOW}Error. Another instance of this script is already running. Refusing to continue.\n
+Running more than one instance of this script at a time could potentially cause malformed or corrupted entries in the ACL files.\n
+If you're sure of what you're doing and want to continue, delete the file '$LOCK_FILE' and run the script again.\n"
+    exit 1
+else
+    # Lock current instance of the script
+    _lock_instance
+    # Prompt user for choice of ACL
+    while :
+    do
+	echo -e "${BOLD}Which files would you like to make entries into?${RESET}\n"
 
-    echo -e "${BOLD}1.${RESET} Both (webdisptab and saprouttab)."
-    echo -e "${BOLD}2.${RESET} Only web dispatcher (webdisptab)."
-    echo -e "${BOLD}3.${RESET} Only sap router table (saprouttab)."
+	echo -e "${BOLD}1.${RESET} Both (webdisptab and saprouttab)."
+	echo -e "${BOLD}2.${RESET} Only web dispatcher (webdisptab)."
+	echo -e "${BOLD}3.${RESET} Only sap router table (saprouttab)."
 
-    echo -en "\n${BOLD}>${RESET} "
-    read -n 1 ACL_CHOICE
+	echo -en "\n${BOLD}>${RESET} "
+	read -n 1 ACL_CHOICE
 
-    echo -e "\n"
+	echo -e "\n"
 
-    if [ -z "$ACL_CHOICE" ] || [[ ! ("$ACL_CHOICE" =~ ^[123]$) ]]
-    then
-	echo -e "\nPlease make a choice.\n"
-    else
-	break
-    fi
-done
+	if [ -z "$ACL_CHOICE" ] || [[ ! ("$ACL_CHOICE" =~ ^[123]$) ]]
+	then
+	    echo -e "\nPlease make a choice.\n"
+	else
+	    break
+	fi
+    done
 
-# Call main whitelister process
-_whitelister
+    # Call main whitelister process
+    _whitelister
+fi
