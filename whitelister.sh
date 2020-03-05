@@ -20,6 +20,18 @@
 #                                                                                  #
 ####################################################################################
 
+##########################
+# COMMAND LINE ARGUMENTS #
+##########################
+
+while getopts ":d:" _args
+do
+    case $_args in
+	# Debugging mode
+	d) DEBUG=$OPTARG;;
+    esac
+done
+
 ####################
 # GLOBAL VARIABLES #
 ####################
@@ -65,6 +77,14 @@ BKP_SAPROUTTAB="$SAPROUTTAB-$SYS_TIME-$(echo $SYS_DATE | tr '/' '.').backup"
 
 # String in webdisptab after which new entries should be added
 WEBDISPTAB_PATTERN="# Script inserted entries"
+
+# Turn on debug mode
+if [[ "$DEBUG" =~ ^ebug$ ]]
+then
+    DEBUG_LOG="./whitelister.sh-$(echo $SYS_DATE | tr '/' '.')-$SYS_TIME.log"
+else
+    DEBUG_LOG="/dev/null"
+fi
 
 # Colors
 RESET='\033[0m'
@@ -430,6 +450,11 @@ function _whitelister() { #quickdoc: Main whitelisting function.
 
     # Remove script instance lock
     _remove_lock
+
+    if [[ "$DEBUG" =~ ^ebug$ ]]
+    then
+	echo -e "${YELLOW}Script logfile written to $DEBUG_LOG${RESET}\n"
+    fi
 }
 
 ######################
@@ -443,13 +468,20 @@ trap "echo -e \"\n${YELLOW}Script interrupted. Removing temporary files and quit
 # MAIN SECTION #
 ################
 
-# Discard output from stderr
-exec 2> /dev/null
+# Discard/write errors to log file.
+exec 2> "$DEBUG_LOG"
 
 # Banner
 echo -e "\n       ${GREEN}####################${RESET}"
 echo -e "       ${GREEN}#  WHITELISTER.SH  #${RESET}"
 echo -e "       ${GREEN}####################\n${RESET}"
+
+# Display debugging information in terminal
+if [[ "$DEBUG" =~ ^ebug$ ]]
+then
+    echo -e "       ${YELLOW}-- DEBUGGING MODE --${RESET}\n"
+    set -x
+fi
 
 echo -e "${BLINK}Press Ctrl-C at any time to exit the script.${RESET}\n"
 
