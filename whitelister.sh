@@ -39,6 +39,9 @@ done
 # Name of the script
 SCRIPT_NAME="$(basename -- $0)"
 
+# Path where script is stored
+SCRIPT_PATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+
 # Current system time: format - DD/MM/YYYY
 SYS_DATE=$(date +'%d/%m/%Y')
 
@@ -81,7 +84,9 @@ WEBDISPTAB_PATTERN="# Script inserted entries"
 # Turn on debug mode
 if [[ "$DEBUG" =~ ^ebug$ ]]
 then
-    DEBUG_LOG="./whitelister.sh-$(echo $SYS_DATE | tr '/' '.')-$SYS_TIME.log"
+    DEBUG_LOG="/tmp/$SCRIPT_NAME-$(echo $SYS_DATE | tr '/' '.')-$SYS_TIME.log"
+    PLATFORM_INFO="/tmp/$SCRIPT_NAME-$(echo $SYS_DATE | tr '/' '.')-$SYS_TIME.platforminfo"
+    DEBUG_TARBALL="$SCRIPT_PATH/$SCRIPT_NAME-$(echo $SYS_DATE | tr '/' '.')-$SYS_TIME.tar"
 else
     DEBUG_LOG="/dev/null"
 fi
@@ -230,6 +235,13 @@ function _update_saprouttab() { #quickdoc: Updates the entries in the router tab
 
 function _reload_saprouter() { #quickdoc: Reloads the saprouter service.
     saprouter reload &> /dev/null
+}
+
+function _generate_debug_tarball() { #quickdoc: Generates a tarball with debugging logs.
+    cat /etc/*-release &> "$PLATFORM_INFO"
+    awk --version &> "$PLATFORM_INFO"
+    sed --version &> "$PLATFORM_INFO"
+    tar cvf "$DEBUG_TARBALL" "$DEBUG_LOG" "$PLATFORM_INFO" &> /dev/null
 }
 
 function _whitelister() { #quickdoc: Main whitelisting function.
@@ -450,11 +462,6 @@ function _whitelister() { #quickdoc: Main whitelisting function.
 
     # Remove script instance lock
     _remove_lock
-
-    if [[ "$DEBUG" =~ ^ebug$ ]]
-    then
-	echo -e "${YELLOW}Script logfile written to $DEBUG_LOG${RESET}\n"
-    fi
 }
 
 ######################
@@ -519,4 +526,12 @@ else
 
     # Call main whitelister process
     _whitelister
+
+    # Generate debugging information tarball
+    _generate_debug_tarball
+
+    if [[ "$DEBUG" =~ ^ebug$ ]]
+    then
+	echo -e "${YELLOW}Debugging information tarball generated in $DEBUG_TARBALL${RESET}\n"
+    fi
 fi
