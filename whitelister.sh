@@ -252,6 +252,9 @@ function _whitelister() { #quickdoc: Main whitelisting function.
     echo -e "\n${BOLD}Enter the partner name:${RESET}\n"
     read _partner_name
 
+    # Trim extra whitespace from partner name
+    _partner_name=$(echo "$_partner_name" | xargs)
+
     echo ""
 
     # Read IP addresses
@@ -349,6 +352,9 @@ function _whitelister() { #quickdoc: Main whitelisting function.
     do
 	echo -e "${BOLD}Enter entry information:${RESET}\n"
 	read _entry_info
+
+	# Trim extra whitespace from entry information
+	_entry_info=$(echo "$_entry_info" | xargs)
 
 	# Enforce that entry information should be non-empty
 	if [ -z "$_entry_info" ]
