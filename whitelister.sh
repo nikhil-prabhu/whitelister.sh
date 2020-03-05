@@ -206,6 +206,10 @@ function _update_saprouttab() { #quickdoc: Updates the entries in the router tab
     cat "$TMP_SAPROUTTAB" > "$SAPROUTTAB"
 }
 
+function _reload_saprouter() { #quickdoc: Reloads the saprouter service.
+    saprouter reload &> /dev/null
+}
+
 function _whitelister() { #quickdoc: Main whitelisting function.
 
     ###################
@@ -236,12 +240,24 @@ function _whitelister() { #quickdoc: Main whitelisting function.
     _create_temp_files
 
     # Read certification ID
-    echo -e "\n${BOLD}Enter the certification ID:${RESET}\n"
-    read _certification_id
+    while :
+    do
+	echo -e "\n${BOLD}Enter the certification ID:${RESET}\n"
+	read _certification_id
+	if [[ "$_certification_id" =~ ^[0-9]+$ ]]
+	then
+	    break
+	else
+	    echo -e "${YELLOW}Certification ID can only contain numbers.${RESET}\n"
+	fi
+    done
 
     # Read partner name
     echo -e "\n${BOLD}Enter the partner name:${RESET}\n"
     read _partner_name
+
+    # Trim extra whitespace from partner name
+    _partner_name=$(echo "$_partner_name" | xargs)
 
     echo ""
 
@@ -328,6 +344,9 @@ function _whitelister() { #quickdoc: Main whitelisting function.
 	if [ -z "$_employee_id" ]
 	then
 	    echo -e "${YELLOW}Employee ID cannot be empty.${RESET}\n"
+	elif [[ ! ("$_employee_id" =~ ^[idcIDC][0-9]{6}$) ]]
+	then
+	    echo -e "${YELLOW}Invalid employee ID $_employee_id.${RESET}\n"
 	else
 	    break
 	fi
@@ -340,6 +359,9 @@ function _whitelister() { #quickdoc: Main whitelisting function.
     do
 	echo -e "${BOLD}Enter entry information:${RESET}\n"
 	read _entry_info
+
+	# Trim extra whitespace from entry information
+	_entry_info=$(echo "$_entry_info" | xargs)
 
 	# Enforce that entry information should be non-empty
 	if [ -z "$_entry_info" ]
@@ -355,7 +377,7 @@ function _whitelister() { #quickdoc: Main whitelisting function.
     do
 	if [ "$ACL_CHOICE" -eq 1 ] || [ "$ACL_CHOICE" -eq 2 ]
 	then
-	    _webdisptab_entry="P /*\t*\t*\t$_ip_address\t*\t# Entry:\t$_employee_id\t$SYS_DATE\t$_entry_info"
+	    _webdisptab_entry="P    /*    *    *    $_ip_address    *    # Entry: $_employee_id $SYS_DATE $_entry_info"
 	    _insert_entry_webdisptab "$_webdisptab_entry" "$_certification_id" "$_partner_name"
 	fi
 
@@ -368,9 +390,9 @@ function _whitelister() { #quickdoc: Main whitelisting function.
 		then
 		    echo -e "${YELLOW}An entry with IP address $_ip_address and hostname $HOST_NAME already exists in the router table. Ignoring.${RESET}"
 		else
-		    _saprouttab_entry="P\t$_ip_address    $HOST_NAME\t$DISP_PORT\t# Entry: $_employee_id $SYS_DATE $_entry_info"
+		    _saprouttab_entry="P    $_ip_address    $HOST_NAME    $DISP_PORT    # Entry: $_employee_id $SYS_DATE $_entry_info"
 		    _insert_entry_saprouttab "$_saprouttab_entry" "$HOST_NAME" "$_certification_id" "$_partner_name"
-		    _saprouttab_entry="P\t$_ip_address    $HOST_NAME\t$GATW_PORT\t# Entry: $_employee_id $SYS_DATE $_entry_info"
+		    _saprouttab_entry="P    $_ip_address    $HOST_NAME    $GATW_PORT    # Entry: $_employee_id $SYS_DATE $_entry_info"
 		    _insert_entry_saprouttab "$_saprouttab_entry" "$HOST_NAME" "$_certification_id" "$_partner_name"
 		fi
 	    done < "$TMP_SIDS"
@@ -385,7 +407,21 @@ function _whitelister() { #quickdoc: Main whitelisting function.
     _update_webdisptab
     _update_saprouttab
 
-    echo -e "${GREEN}Entries added successfully.${RESET}\n"
+    echo -e "\n${GREEN}Entries added successfully.${RESET}\n"
+    
+    # Reload saprouter
+    if [ "$ACL_CHOICE" -eq 1 ] || [ "$ACL_CHOICE" -eq 3 ]
+    then
+	echo -e "${BOLD}Reloading saprouter...${RESET}\n"
+	_reload_saprouter
+	local _ret="$?"
+	if [ "$_ret" -eq 0 ]
+	then
+	    echo -e "${GREEN}saprouter reloaded.${RESET}\n"
+	else
+	    echo -e "${YELLOW}Error. saprouter exited with status $_ret.${RESET}\n"
+	fi
+    fi
 
     # Remove temporary files
     _remove_temp_files
