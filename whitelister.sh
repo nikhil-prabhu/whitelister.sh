@@ -144,7 +144,7 @@ function _duplicate_entry_in_saprouttab() { #quickdoc: Checks whether informatio
 }
 
 function _check_valid_sid() { #quickdoc: Checks if an entered SID is valid or not.
-    if [[ "$1" =~ ^[A-Za-z0-9][A-Za-z0-9][A-Za-z0-9]$ ]]
+    if [[ "$1" =~ ^[A-Za-z0-9]{3}$ ]]
     then
 	return 0
     else
