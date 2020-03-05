@@ -244,7 +244,7 @@ function _whitelister() { #quickdoc: Main whitelisting function.
 	then
 	    break
 	else
-	    echo -e "${YELLOW}Certification ID can only contain numbers.${RESET}"
+	    echo -e "${YELLOW}Certification ID can only contain numbers.${RESET}\n"
 	fi
     done
 
@@ -340,6 +340,9 @@ function _whitelister() { #quickdoc: Main whitelisting function.
 	if [ -z "$_employee_id" ]
 	then
 	    echo -e "${YELLOW}Employee ID cannot be empty.${RESET}\n"
+	elif [[ ! ("$_employee_id" =~ ^[idcIDC][0-9]{6}$) ]]
+	then
+	    echo -e "${YELLOW}Invalid employee ID $_employee_id.${RESET}\n"
 	else
 	    break
 	fi
