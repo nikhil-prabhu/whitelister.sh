@@ -206,6 +206,10 @@ function _update_saprouttab() { #quickdoc: Updates the entries in the router tab
     cat "$TMP_SAPROUTTAB" > "$SAPROUTTAB"
 }
 
+function _reload_saprouter() { #quickdoc: Reloads the saprouter service.
+    saprouter reload &> /dev/null
+}
+
 function _whitelister() { #quickdoc: Main whitelisting function.
 
     ###################
@@ -403,7 +407,21 @@ function _whitelister() { #quickdoc: Main whitelisting function.
     _update_webdisptab
     _update_saprouttab
 
-    echo -e "${GREEN}Entries added successfully.${RESET}\n"
+    echo -e "\n${GREEN}Entries added successfully.${RESET}\n"
+    
+    # Reload saprouter
+    if [ "$ACL_CHOICE" -eq 1 ] || [ "$ACL_CHOICE" -eq 3 ]
+    then
+	echo -e "${BOLD}Reloading saprouter...${RESET}\n"
+	_reload_saprouter
+	local _ret="$?"
+	if [ "$_ret" -eq 0 ]
+	then
+	    echo -e "${GREEN}saprouter reloaded.${RESET}\n"
+	else
+	    echo -e "${YELLOW}Error. saprouter exited with status $_ret.${RESET}\n"
+	fi
+    fi
 
     # Remove temporary files
     _remove_temp_files
