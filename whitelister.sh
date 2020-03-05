@@ -98,7 +98,7 @@ function _remove_temp_files() { #quickdoc: Removes temporary files used by the s
     rm "$TMP_WEBDISPTAB" "$TMP_SAPROUTTAB" "$TMP_IPS" "$TMP_SIDS"
 }
 
-function _check_valid_ipv4_address() { #quickdoc: Checks if an entered IPv4 address is valid or not.
+function _valid_ipv4_address() { #quickdoc: Checks if an entered IPv4 address is valid or not.
     if [[ "$1" =~ ^(([1-9]?[0-9]|1[0-9][0-9]|2([0-4][0-9]|5[0-5]))\.){3}([1-9]?[0-9]|1[0-9][0-9]|2([0-4][0-9]|5[0-5]))([/]([0123456789]|1[0-9]|2[0-9]|3[0-2]))?$ && ! ("$1" =~ ^(([0])\.){3}([0])([/]([0123456789]|1[0-9]|2[0-9]|3[0-2]))?$) ]]
     then
 	return 0
@@ -143,7 +143,7 @@ function _duplicate_entry_in_saprouttab() { #quickdoc: Checks whether informatio
     fi
 }
 
-function _check_valid_sid() { #quickdoc: Checks if an entered SID is valid or not.
+function _valid_sid() { #quickdoc: Checks if an entered SID is valid or not.
     if [[ "$1" =~ ^[A-Za-z0-9]{3}$ ]]
     then
 	return 0
@@ -152,7 +152,7 @@ function _check_valid_sid() { #quickdoc: Checks if an entered SID is valid or no
     fi
 }
 
-function _check_sid_exists() { #quickdoc: Checks if an entered SID exists in the reference table.
+function _sid_exists() { #quickdoc: Checks if an entered SID exists in the reference table.
     if grep -i -q "$1:" "$SAPROUTTAB"
     then
 	return 0
@@ -265,7 +265,7 @@ function _whitelister() { #quickdoc: Main whitelisting function.
     echo -e "${BOLD}Enter the IP addresses [Press Ctrl-D when you're done]:${RESET}\n"
     while read _ip_address
     do
-	if _check_valid_ipv4_address "$_ip_address"
+	if _valid_ipv4_address "$_ip_address"
 	then
 	    if _duplicate_ip_in_session "$_ip_address"
 	    then
@@ -305,9 +305,9 @@ function _whitelister() { #quickdoc: Main whitelisting function.
 	echo -e "${BOLD}Enter the SIDs [Press Ctrl-D when you're done]:${RESET}\n"
 	while read _sid
 	do
-	    if _check_valid_sid "$_sid"
+	    if _valid_sid "$_sid"
 	    then
-		if _check_sid_exists "$_sid"
+		if _sid_exists "$_sid"
 		then
 		    if _duplicate_sid_in_session "$_sid"
 		    then
