@@ -236,8 +236,17 @@ function _whitelister() { #quickdoc: Main whitelisting function.
     _create_temp_files
 
     # Read certification ID
-    echo -e "\n${BOLD}Enter the certification ID:${RESET}\n"
-    read _certification_id
+    while :
+    do
+	echo -e "\n${BOLD}Enter the certification ID:${RESET}\n"
+	read _certification_id
+	if [[ "$_certification_id" =~ ^[0-9]+$ ]]
+	then
+	    break
+	else
+	    echo -e "${YELLOW}Certification ID can only contain numbers.${RESET}"
+	fi
+    done
 
     # Read partner name
     echo -e "\n${BOLD}Enter the partner name:${RESET}\n"
