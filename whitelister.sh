@@ -36,6 +36,9 @@ done
 # GLOBAL VARIABLES #
 ####################
 
+# whitelister.sh version
+VERSION=1.0.0-testing
+
 # Name of the script
 SCRIPT_NAME="$(basename -- $0)"
 
@@ -238,9 +241,10 @@ function _reload_saprouter() { #quickdoc: Reloads the saprouter service.
 }
 
 function _generate_debug_tarball() { #quickdoc: Generates a tarball with debugging logs.
-    cat /etc/*-release &> "$PLATFORM_INFO"
-    awk --version &> "$PLATFORM_INFO"
-    sed --version &> "$PLATFORM_INFO"
+    echo "whitelister.sh version: $VERSION" &> "$PLATFORM_INFO"
+    cat /etc/*-release &>> "$PLATFORM_INFO"
+    awk --version &>> "$PLATFORM_INFO"
+    sed --version &>> "$PLATFORM_INFO"
     tar cvf "$DEBUG_TARBALL" "$DEBUG_LOG" "$PLATFORM_INFO" &> /dev/null
 }
 
