@@ -241,10 +241,10 @@ function _reload_saprouter() { #quickdoc: Reloads the saprouter service.
 }
 
 function _generate_debug_tarball() { #quickdoc: Generates a tarball with debugging logs.
-    echo "whitelister.sh version: $VERSION" &> "$PLATFORM_INFO"
-    cat /etc/*-release &>> "$PLATFORM_INFO"
-    awk --version &>> "$PLATFORM_INFO"
-    sed --version &>> "$PLATFORM_INFO"
+    echo "whitelister.sh version: $VERSION" > "$PLATFORM_INFO" 2>&1
+    cat /etc/*-release >> "$PLATFORM_INFO" 2>&1
+    awk --version >> "$PLATFORM_INFO" 2>&1
+    sed --version >> "$PLATFORM_INFO" 2>&1
     tar cvf "$DEBUG_TARBALL" "$DEBUG_LOG" "$PLATFORM_INFO" &> /dev/null
 }
 
