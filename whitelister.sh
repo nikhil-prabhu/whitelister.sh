@@ -501,7 +501,7 @@ if [ -f "$LOCK_FILE" ]
 then
     echo -e "${YELLOW}Error. Another instance of this script is already running. Refusing to continue.\n
 Running more than one instance of this script at a time could potentially cause malformed or corrupted entries in the ACL files.\n
-If you're sure of what you're doing and want to continue, delete the file '$LOCK_FILE' and run the script again.\n"
+If you're sure of what you're doing and want to continue, delete the file '$LOCK_FILE' and run the script again.${RESET}\n"
     exit 1
 else
     # Lock current instance of the script
