@@ -89,7 +89,7 @@ if [[ "$DEBUG" =~ ^ebug$ ]]
 then
     DEBUG_LOG="/tmp/$SCRIPT_NAME-$(echo $SYS_DATE | tr '/' '.')-$SYS_TIME.log"
     PLATFORM_INFO="/tmp/$SCRIPT_NAME-$(echo $SYS_DATE | tr '/' '.')-$SYS_TIME.platforminfo"
-    DEBUG_TARBALL="$SCRIPT_PATH/$SCRIPT_NAME-$(echo $SYS_DATE | tr '/' '.')-$SYS_TIME.tar"
+    DEBUG_TARBALL="$SCRIPT_PATH/$SCRIPT_NAME-$(echo $SYS_DATE | tr '/' '.')-$(echo $SYS_TIME | tr ':' '.').tar"
 else
     DEBUG_LOG="/dev/null"
 fi
