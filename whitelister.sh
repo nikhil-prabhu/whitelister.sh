@@ -191,6 +191,15 @@ function _sid_exists() { #quickdoc: Checks if an entered SID exists in the refer
     fi
 }
 
+function _valid_email() { #quickdoc: Checks if en entered email id is valid or not.
+    if [[ "$1" =~ ^(.*[@].*\..*)$ ]]
+    then
+	return 0
+    else
+	return 1
+    fi
+}
+
 function _get_system_details() { #quickdoc: Extracts system information from the SID reference table.
     # System information
     SYS_INFO=$(grep -i "$1" "$SAPROUTTAB" | head -n 1)
@@ -264,8 +273,10 @@ function _whitelister() { #quickdoc: Main whitelisting function.
     local _sid
     # Employee ID
     local _employee_id
-    # Entry information
-    local _entry_info
+    # Person who requested the entry
+    local _requested_by
+    # Consultant contact email id
+    local _consultant_email
     # webdisptab entry format
     local _webdisptab_entry
     # saprouttab entry format
@@ -392,21 +403,30 @@ function _whitelister() { #quickdoc: Main whitelisting function.
 
     echo ""
 
-    # Read entry information
+    # Read name of person who requested entry
+    echo -e "${BOLD}Entry requested by:${RESET}\n"
+    read _requested_by
+
+    echo ""
+
+    # Read email id of technical consultant
     while :
     do
-	echo -e "${BOLD}Enter entry information:${RESET}\n"
-	read _entry_info
+	echo -e "${BOLD}Enter email id of technical consultant:${RESET}\n"
+	read _consultant_email
 
-	# Trim extra whitespace from entry information
-	_entry_info=$(echo "$_entry_info" | xargs)
-
-	# Enforce that entry information should be non-empty
-	if [ -z "$_entry_info" ]
+	# Enforce that email id should be non-empty
+	if [ -z "$_consultant_email" ]
 	then
-	    echo -e "${YELLOW}Entry information cannot be empty.${RESET}\n"
+	    echo -e "${YELLOW}Email id cannot be empty.${RESET}\n"
 	else
-	    break
+	    # Check if email id is valid
+	    if _valid_email "$_consultant_email"
+	    then
+		break
+	    else
+		echo -e "${YELLOW}Please enter a valid email id.${RESET}\n"
+	    fi
 	fi
     done
 
@@ -415,7 +435,7 @@ function _whitelister() { #quickdoc: Main whitelisting function.
     do
 	if [ "$ACL_CHOICE" -eq 1 ] || [ "$ACL_CHOICE" -eq 2 ]
 	then
-	    _webdisptab_entry="P    /*    *    *    $_ip_address    *    # Entry: $_employee_id $SYS_DATE $_entry_info"
+	    _webdisptab_entry="P    /*    *    *    $_ip_address    *    # Entry: $_employee_id $SYS_DATE $_requested_by <$_consultant_email>"
 	    _insert_entry_webdisptab "$_webdisptab_entry" "$_certification_id" "$_partner_name"
 	fi
 
@@ -428,9 +448,9 @@ function _whitelister() { #quickdoc: Main whitelisting function.
 		then
 		    echo -e "${YELLOW}An entry with IP address $_ip_address and hostname $HOST_NAME already exists in the router table. Ignoring.${RESET}"
 		else
-		    _saprouttab_entry="P    $_ip_address    $HOST_NAME    $DISP_PORT    # Entry: $_employee_id $SYS_DATE $_entry_info"
+		    _saprouttab_entry="P    $_ip_address    $HOST_NAME    $DISP_PORT    # Entry: $_employee_id $SYS_DATE $_requested_by <$_consultant_email>"
 		    _insert_entry_saprouttab "$_saprouttab_entry" "$HOST_NAME" "$_certification_id" "$_partner_name"
-		    _saprouttab_entry="P    $_ip_address    $HOST_NAME    $GATW_PORT    # Entry: $_employee_id $SYS_DATE $_entry_info"
+		    _saprouttab_entry="P    $_ip_address    $HOST_NAME    $GATW_PORT    # Entry: $_employee_id $SYS_DATE $_requested_by <$_consultant_email>"
 		    _insert_entry_saprouttab "$_saprouttab_entry" "$HOST_NAME" "$_certification_id" "$_partner_name"
 		fi
 	    done < "$TMP_SIDS"
