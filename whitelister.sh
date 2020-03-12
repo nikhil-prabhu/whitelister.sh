@@ -437,6 +437,11 @@ function _whitelister() { #quickdoc: Main whitelisting function.
 	then
 	    _webdisptab_entry="P    /*    *    *    $_ip_address    *    # Entry: $_employee_id $SYS_DATE $_requested_by <$_consultant_email>"
 	    _insert_entry_webdisptab "$_webdisptab_entry" "$_certification_id" "$_partner_name"
+	    _ret=$?
+	    if [ $_ret -ne 0 ]
+	    then
+		break
+	    fi
 	fi
 
 	if [ "$ACL_CHOICE" -eq 1 ] || [ "$ACL_CHOICE" -eq 3 ]
@@ -450,34 +455,60 @@ function _whitelister() { #quickdoc: Main whitelisting function.
 		else
 		    _saprouttab_entry="P    $_ip_address    $HOST_NAME    $DISP_PORT    # Entry: $_employee_id $SYS_DATE $_requested_by <$_consultant_email>"
 		    _insert_entry_saprouttab "$_saprouttab_entry" "$HOST_NAME" "$_certification_id" "$_partner_name"
+		    _ret=$?
+		    if [ $_ret -ne 0 ]
+		    then
+			break
+		    fi
 		    _saprouttab_entry="P    $_ip_address    $HOST_NAME    $GATW_PORT    # Entry: $_employee_id $SYS_DATE $_requested_by <$_consultant_email>"
 		    _insert_entry_saprouttab "$_saprouttab_entry" "$HOST_NAME" "$_certification_id" "$_partner_name"
+		    _ret=$?
+		    if [ $_ret -ne 0 ]
+		    then
+			break
+		    fi
 		fi
 	    done < "$TMP_SIDS"
 	fi
     done < "$TMP_IPS"
 
-    # Remove blank lines
-    _remove_blank_lines "$TMP_WEBDISPTAB"
-    _remove_blank_lines "$TMP_SAPROUTTAB"
-
-    # Update webdisptab and saprouttab
-    _update_webdisptab
-    _update_saprouttab
-
-    echo -e "\n${GREEN}Entries added successfully.${RESET}\n"
-    
-    # Reload saprouter
-    if [ "$ACL_CHOICE" -eq 1 ] || [ "$ACL_CHOICE" -eq 3 ]
+    if [ $_ret -ne 0 ]
     then
-	echo -e "${BOLD}Reloading saprouter...${RESET}\n"
-	_reload_saprouter
-	local _ret="$?"
-	if [ "$_ret" -eq 0 ]
+	echo -e "\n${YELLOW}An unknown error occured. (Error code: $_ret).${RESET}\n"
+	_remove_temp_files
+	_remove_lock
+	exit 1
+    else
+	# Remove blank lines
+	_remove_blank_lines "$TMP_WEBDISPTAB"
+	_remove_blank_lines "$TMP_SAPROUTTAB"
+
+	# Update webdisptab and saprouttab
+	_update_webdisptab
+	_update_saprouttab
+
+	if [ "$ACL_CHOICE" -eq 1 ]
 	then
-	    echo -e "${GREEN}saprouter reloaded.${RESET}\n"
+	    echo -e "\n${GREEN}Entries added into webdisptab and saprouttab successfully.${RESET}\n"
+	elif [ "$ACL_CHOICE" -eq 2 ]
+	then
+	    echo -e "\n${GREEN}Entries added into webdisptab successfully.${RESET}\n"
 	else
-	    echo -e "${YELLOW}Error. saprouter exited with status $_ret.${RESET}\n"
+	    echo -e "\n${GREEN}Entries added into saprouttab successfully.${RESET}\n"
+	fi
+	
+	# Reload saprouter
+	if [ "$ACL_CHOICE" -eq 1 ] || [ "$ACL_CHOICE" -eq 3 ]
+	then
+	    echo -e "${BOLD}Reloading saprouter...${RESET}\n"
+	    _reload_saprouter
+	    local _ret="$?"
+	    if [ "$_ret" -eq 0 ]
+	    then
+		echo -e "${GREEN}saprouter reloaded.${RESET}\n"
+	    else
+		echo -e "${YELLOW}Error. saprouter exited with status $_ret.${RESET}\n"
+	    fi
 	fi
     fi
 
