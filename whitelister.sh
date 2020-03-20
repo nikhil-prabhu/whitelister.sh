@@ -37,7 +37,7 @@ done
 ####################
 
 # whitelister.sh version
-VERSION=1.0.0-testing
+VERSION=1.1.0
 
 # Name of the script
 SCRIPT_NAME="$(basename -- $0)"
@@ -245,8 +245,25 @@ function _update_saprouttab() { #quickdoc: Updates the entries in the router tab
     cat "$TMP_SAPROUTTAB" > "$SAPROUTTAB"
 }
 
+function _init_system() { #quickdoc: Detects type of init system in use.
+    if [[ `systemctl` =~ -\.mount ]] 2> /dev/null
+    then
+	# systemd
+	INIT_SYSTEM="systemd"
+    elif [[ -f "/etc/init.d/cron" ]] && [[ ! -h "/etc/init.d/cron" ]]
+    then
+	# SysV
+	INIT_SYSTEM="SysV"
+    fi
+}
+
 function _reload_saprouter() { #quickdoc: Reloads the saprouter service.
-    saprouter reload &> /dev/null
+    if [ $INIT_SYSTEM = "systemd" ]
+    then
+	sudo -n systemctl restart saprouter &> /dev/null
+    else
+	saprouter reload &> /dev/null
+    fi
 }
 
 function _generate_debug_tarball() { #quickdoc: Generates a tarball with debugging logs.
@@ -500,7 +517,8 @@ function _whitelister() { #quickdoc: Main whitelisting function.
 	# Reload saprouter
 	if [ "$ACL_CHOICE" -eq 1 ] || [ "$ACL_CHOICE" -eq 3 ]
 	then
-	    echo -e "${BOLD}Reloading saprouter...${RESET}\n"
+	    _init_system
+	    echo -e "${BOLD}Reloading saprouter... (Detected init system: $INIT_SYSTEM)${RESET}\n"
 	    _reload_saprouter
 	    local _ret="$?"
 	    if [ "$_ret" -eq 0 ]
