@@ -245,7 +245,7 @@ function _update_saprouttab() { #quickdoc: Updates the entries in the router tab
     cat "$TMP_SAPROUTTAB" > "$SAPROUTTAB"
 }
 
-function _init_system() { #quickdoc: Detects type of init system in use.
+function _detect_init_system() { #quickdoc: Detects type of init system in use.
     if [[ `systemctl` =~ -\.mount ]] 2> /dev/null
     then
 	# systemd
@@ -519,7 +519,7 @@ function _whitelister() { #quickdoc: Main whitelisting function.
 	# Reload saprouter
 	if [ "$ACL_CHOICE" -eq 1 ] || [ "$ACL_CHOICE" -eq 3 ]
 	then
-	    _init_system
+	    _detect_init_system
 	    echo -e "${BOLD}Reloading saprouter... (Detected init system: $INIT_SYSTEM)${RESET}\n"
 	    _reload_saprouter
 	    local _ret="$?"
