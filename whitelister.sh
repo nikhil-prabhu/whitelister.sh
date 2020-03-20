@@ -37,7 +37,7 @@ done
 ####################
 
 # whitelister.sh version
-VERSION=1.1.0
+VERSION=1.1.1
 
 # Name of the script
 SCRIPT_NAME="$(basename -- $0)"
@@ -359,6 +359,7 @@ function _whitelister() { #quickdoc: Main whitelisting function.
     then
 	echo -e "${YELLOW}No IP addresses entered. Cleaning temporary files and quitting...${RESET}\n"
 	_remove_temp_files
+	_remove_lock
 	exit 1
     fi
 
@@ -394,6 +395,7 @@ function _whitelister() { #quickdoc: Main whitelisting function.
 	then
 	    echo -e "${YELLOW}No SIDs entered. Cleaning temporary files and quitting...${RESET}"
 	    _remove_temp_files
+	    _remove_lock
 	    exit 1
 	fi
     fi
