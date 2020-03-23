@@ -37,7 +37,7 @@ done
 ####################
 
 # whitelister.sh version
-VERSION=1.1.1
+VERSION=1.2.0
 
 # Name of the script
 SCRIPT_NAME="$(basename -- $0)"
@@ -126,6 +126,15 @@ function _remove_temp_files() { #quickdoc: Removes temporary files used by the s
 
 function _remove_lock() { #quickdoc: Removes the script instance lock.
     rm "$LOCK_FILE"
+}
+
+function _partner_exists() { #quickdoc: Checks whether a partner already has entries in the file(s).
+    if grep -Eq "(^|\s)##-- ${1}:($|\s)" "$2"
+    then
+	return 0
+    else
+	return 1
+    fi
 }
 
 function _valid_ipv4_address() { #quickdoc: Checks if an entered IPv4 address is valid or not.
@@ -319,11 +328,33 @@ function _whitelister() { #quickdoc: Main whitelisting function.
     done
 
     # Read partner name
-    echo -e "\n${BOLD}Enter the partner name:${RESET}\n"
-    read _partner_name
+    if _partner_exists "$_certification_id" "$TMP_WEBDISPTAB" && _partner_exists "$_certification_id" "$TMP_SAPROUTTAB"
+    then
+	_partner_name=$(sed -n -e "s/^.*.${_certification_id}: //p" "$TMP_WEBDISPTAB" | tr -d "\-\-##")
+	echo -e "\n${GREEN}Identified partner as ${_partner_name}using certification ID $_certification_id.${RESET}\n"
+    elif _partner_exists "$_certification_id" "$TMP_SAPROUTTAB"
+    then
+	_partner_name=$(sed -n -e "s/^.*.${_certification_id}: //p" "$TMP_SAPROUTTAB" | tr -d "\-\-##")
+	echo -e "\n${GREEN}Identified partner as ${_partner_name}using certification ID $_certification_id.${RESET}\n"
+    elif _partner_exists "$_certification_id" "$TMP_WEBDISPTAB"
+    then
+	_partner_name=$(sed -n -e "s/^.*.${_certification_id}: //p" "$TMP_WEBDISPTAB" | tr -d "\-\-##")
+	echo -e "\n${GREEN}Identified partner as ${_partner_name}using certification ID $_certification_id.${RESET}\n"
+    else
+	while :
+	do
+	    echo -e "\n${BOLD}Enter the partner name:${RESET}\n"
+	    read _partner_name
 
-    # Trim extra whitespace from partner name
-    _partner_name=$(echo "$_partner_name" | xargs)
+	    # Enforce that partner name should be non-empty
+	    if [ -z "$_partner_name" ]
+	    then
+		echo -e "\n${YELLOW}Partner name cannot be empty.${RESET}\n"
+	    else
+		break
+	    fi
+	done
+    fi
 
     echo ""
 
