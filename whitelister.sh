@@ -343,6 +343,7 @@ function _whitelister() { #quickdoc: Main whitelisting function.
     else
 	while :
 	do
+	    echo -e "\n${YELLOW}Partner name could not be identified using certification ID.${RESET}"
 	    echo -e "\n${BOLD}Enter the partner name:${RESET}\n"
 	    read _partner_name
 
