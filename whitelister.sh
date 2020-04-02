@@ -37,7 +37,7 @@ done
 ####################
 
 # whitelister.sh version
-VERSION=1.0.0-testing
+VERSION=1.2.0
 
 # Name of the script
 SCRIPT_NAME="$(basename -- $0)"
@@ -89,7 +89,7 @@ if [[ "$DEBUG" =~ ^ebug$ ]]
 then
     DEBUG_LOG="/tmp/$SCRIPT_NAME-$(echo $SYS_DATE | tr '/' '.')-$SYS_TIME.log"
     PLATFORM_INFO="/tmp/$SCRIPT_NAME-$(echo $SYS_DATE | tr '/' '.')-$SYS_TIME.platforminfo"
-    DEBUG_TARBALL="$SCRIPT_PATH/$SCRIPT_NAME-$(echo $SYS_DATE | tr '/' '.')-$SYS_TIME.tar"
+    DEBUG_TARBALL="$SCRIPT_PATH/$SCRIPT_NAME-$(echo $SYS_DATE | tr '/' '.')-$(echo $SYS_TIME | tr ':' '.').tar"
 else
     DEBUG_LOG="/dev/null"
 fi
@@ -126,6 +126,15 @@ function _remove_temp_files() { #quickdoc: Removes temporary files used by the s
 
 function _remove_lock() { #quickdoc: Removes the script instance lock.
     rm "$LOCK_FILE"
+}
+
+function _partner_exists() { #quickdoc: Checks whether a partner already has entries in the file(s).
+    if grep -Eq "(^|\s)##-- ${1}:($|\s)" "$2"
+    then
+	return 0
+    else
+	return 1
+    fi
 }
 
 function _valid_ipv4_address() { #quickdoc: Checks if an entered IPv4 address is valid or not.
@@ -191,6 +200,15 @@ function _sid_exists() { #quickdoc: Checks if an entered SID exists in the refer
     fi
 }
 
+function _valid_email() { #quickdoc: Checks if en entered email id is valid or not.
+    if [[ "$1" =~ ^(.*[@].*\..*)$ ]]
+    then
+	return 0
+    else
+	return 1
+    fi
+}
+
 function _get_system_details() { #quickdoc: Extracts system information from the SID reference table.
     # System information
     SYS_INFO=$(grep -i "$1" "$SAPROUTTAB" | head -n 1)
@@ -236,15 +254,32 @@ function _update_saprouttab() { #quickdoc: Updates the entries in the router tab
     cat "$TMP_SAPROUTTAB" > "$SAPROUTTAB"
 }
 
+function _detect_init_system() { #quickdoc: Detects type of init system in use.
+    if [[ `systemctl` =~ -\.mount ]] 2> /dev/null
+    then
+	# systemd
+	INIT_SYSTEM="systemd"
+    elif [[ -f "/etc/init.d/cron" ]] && [[ ! -h "/etc/init.d/cron" ]]
+    then
+	# SysV
+	INIT_SYSTEM="SysV"
+    fi
+}
+
 function _reload_saprouter() { #quickdoc: Reloads the saprouter service.
-    saprouter reload &> /dev/null
+    if [ $INIT_SYSTEM = "systemd" ]
+    then
+	sudo -n systemctl restart saprouter &> /dev/null
+    else
+	saprouter reload &> /dev/null
+    fi
 }
 
 function _generate_debug_tarball() { #quickdoc: Generates a tarball with debugging logs.
-    echo "whitelister.sh version: $VERSION" &> "$PLATFORM_INFO"
-    cat /etc/*-release &>> "$PLATFORM_INFO"
-    awk --version &>> "$PLATFORM_INFO"
-    sed --version &>> "$PLATFORM_INFO"
+    echo "whitelister.sh version: $VERSION" > "$PLATFORM_INFO" 2>&1
+    cat /etc/*-release >> "$PLATFORM_INFO" 2>&1
+    awk --version >> "$PLATFORM_INFO" 2>&1
+    sed --version >> "$PLATFORM_INFO" 2>&1
     tar cvf "$DEBUG_TARBALL" "$DEBUG_LOG" "$PLATFORM_INFO" &> /dev/null
 }
 
@@ -264,8 +299,10 @@ function _whitelister() { #quickdoc: Main whitelisting function.
     local _sid
     # Employee ID
     local _employee_id
-    # Entry information
-    local _entry_info
+    # Person who requested the entry
+    local _requested_by
+    # Consultant contact email id
+    local _consultant_email
     # webdisptab entry format
     local _webdisptab_entry
     # saprouttab entry format
@@ -291,11 +328,34 @@ function _whitelister() { #quickdoc: Main whitelisting function.
     done
 
     # Read partner name
-    echo -e "\n${BOLD}Enter the partner name:${RESET}\n"
-    read _partner_name
+    if _partner_exists "$_certification_id" "$TMP_WEBDISPTAB" && _partner_exists "$_certification_id" "$TMP_SAPROUTTAB"
+    then
+	_partner_name=$(sed -n -e "s/^.*.${_certification_id}: //p" "$TMP_WEBDISPTAB" | tr -d "\-\-##")
+	echo -e "\n${GREEN}Identified partner as ${_partner_name}using certification ID $_certification_id.${RESET}\n"
+    elif _partner_exists "$_certification_id" "$TMP_SAPROUTTAB"
+    then
+	_partner_name=$(sed -n -e "s/^.*.${_certification_id}: //p" "$TMP_SAPROUTTAB" | tr -d "\-\-##")
+	echo -e "\n${GREEN}Identified partner as ${_partner_name}using certification ID $_certification_id.${RESET}\n"
+    elif _partner_exists "$_certification_id" "$TMP_WEBDISPTAB"
+    then
+	_partner_name=$(sed -n -e "s/^.*.${_certification_id}: //p" "$TMP_WEBDISPTAB" | tr -d "\-\-##")
+	echo -e "\n${GREEN}Identified partner as ${_partner_name}using certification ID $_certification_id.${RESET}\n"
+    else
+	while :
+	do
+	    echo -e "\n${YELLOW}Partner name could not be identified using certification ID.${RESET}"
+	    echo -e "\n${BOLD}Enter the partner name:${RESET}\n"
+	    read _partner_name
 
-    # Trim extra whitespace from partner name
-    _partner_name=$(echo "$_partner_name" | xargs)
+	    # Enforce that partner name should be non-empty
+	    if [ -z "$_partner_name" ]
+	    then
+		echo -e "\n${YELLOW}Partner name cannot be empty.${RESET}\n"
+	    else
+		break
+	    fi
+	done
+    fi
 
     echo ""
 
@@ -331,6 +391,7 @@ function _whitelister() { #quickdoc: Main whitelisting function.
     then
 	echo -e "${YELLOW}No IP addresses entered. Cleaning temporary files and quitting...${RESET}\n"
 	_remove_temp_files
+	_remove_lock
 	exit 1
     fi
 
@@ -366,6 +427,7 @@ function _whitelister() { #quickdoc: Main whitelisting function.
 	then
 	    echo -e "${YELLOW}No SIDs entered. Cleaning temporary files and quitting...${RESET}"
 	    _remove_temp_files
+	    _remove_lock
 	    exit 1
 	fi
     fi
@@ -392,21 +454,30 @@ function _whitelister() { #quickdoc: Main whitelisting function.
 
     echo ""
 
-    # Read entry information
+    # Read name of person who requested entry
+    echo -e "${BOLD}Entry requested by:${RESET}\n"
+    read _requested_by
+
+    echo ""
+
+    # Read email id of technical consultant
     while :
     do
-	echo -e "${BOLD}Enter entry information:${RESET}\n"
-	read _entry_info
+	echo -e "${BOLD}Enter email id of technical consultant:${RESET}\n"
+	read _consultant_email
 
-	# Trim extra whitespace from entry information
-	_entry_info=$(echo "$_entry_info" | xargs)
-
-	# Enforce that entry information should be non-empty
-	if [ -z "$_entry_info" ]
+	# Enforce that email id should be non-empty
+	if [ -z "$_consultant_email" ]
 	then
-	    echo -e "${YELLOW}Entry information cannot be empty.${RESET}\n"
+	    echo -e "${YELLOW}Email id cannot be empty.${RESET}\n"
 	else
-	    break
+	    # Check if email id is valid
+	    if _valid_email "$_consultant_email"
+	    then
+		break
+	    else
+		echo -e "${YELLOW}Please enter a valid email id.${RESET}\n"
+	    fi
 	fi
     done
 
@@ -415,8 +486,13 @@ function _whitelister() { #quickdoc: Main whitelisting function.
     do
 	if [ "$ACL_CHOICE" -eq 1 ] || [ "$ACL_CHOICE" -eq 2 ]
 	then
-	    _webdisptab_entry="P    /*    *    *    $_ip_address    *    # Entry: $_employee_id $SYS_DATE $_entry_info"
+	    _webdisptab_entry="P    /*    *    *    $_ip_address    *    # Entry: $_employee_id | $SYS_DATE | $_requested_by | $_consultant_email"
 	    _insert_entry_webdisptab "$_webdisptab_entry" "$_certification_id" "$_partner_name"
+	    _ret=$?
+	    if [ $_ret -ne 0 ]
+	    then
+		break
+	    fi
 	fi
 
 	if [ "$ACL_CHOICE" -eq 1 ] || [ "$ACL_CHOICE" -eq 3 ]
@@ -428,36 +504,63 @@ function _whitelister() { #quickdoc: Main whitelisting function.
 		then
 		    echo -e "${YELLOW}An entry with IP address $_ip_address and hostname $HOST_NAME already exists in the router table. Ignoring.${RESET}"
 		else
-		    _saprouttab_entry="P    $_ip_address    $HOST_NAME    $DISP_PORT    # Entry: $_employee_id $SYS_DATE $_entry_info"
+		    _saprouttab_entry="P    $_ip_address    $HOST_NAME    $DISP_PORT    # Entry: $_employee_id | $SYS_DATE | $_requested_by | $_consultant_email"
 		    _insert_entry_saprouttab "$_saprouttab_entry" "$HOST_NAME" "$_certification_id" "$_partner_name"
-		    _saprouttab_entry="P    $_ip_address    $HOST_NAME    $GATW_PORT    # Entry: $_employee_id $SYS_DATE $_entry_info"
+		    _ret=$?
+		    if [ $_ret -ne 0 ]
+		    then
+			break
+		    fi
+		    _saprouttab_entry="P    $_ip_address    $HOST_NAME    $GATW_PORT    # Entry: $_employee_id | $SYS_DATE | $_requested_by | $_consultant_email"
 		    _insert_entry_saprouttab "$_saprouttab_entry" "$HOST_NAME" "$_certification_id" "$_partner_name"
+		    _ret=$?
+		    if [ $_ret -ne 0 ]
+		    then
+			break
+		    fi
 		fi
 	    done < "$TMP_SIDS"
 	fi
     done < "$TMP_IPS"
 
-    # Remove blank lines
-    _remove_blank_lines "$TMP_WEBDISPTAB"
-    _remove_blank_lines "$TMP_SAPROUTTAB"
-
-    # Update webdisptab and saprouttab
-    _update_webdisptab
-    _update_saprouttab
-
-    echo -e "\n${GREEN}Entries added successfully.${RESET}\n"
-    
-    # Reload saprouter
-    if [ "$ACL_CHOICE" -eq 1 ] || [ "$ACL_CHOICE" -eq 3 ]
+    if [ $_ret -ne 0 ]
     then
-	echo -e "${BOLD}Reloading saprouter...${RESET}\n"
-	_reload_saprouter
-	local _ret="$?"
-	if [ "$_ret" -eq 0 ]
+	echo -e "\n${YELLOW}An unknown error occured. (Error code: $_ret).${RESET}\n"
+	_remove_temp_files
+	_remove_lock
+	exit 1
+    else
+	# Remove blank lines
+	_remove_blank_lines "$TMP_WEBDISPTAB"
+	_remove_blank_lines "$TMP_SAPROUTTAB"
+
+	# Update webdisptab and saprouttab
+	_update_webdisptab
+	_update_saprouttab
+
+	if [ "$ACL_CHOICE" -eq 1 ]
 	then
-	    echo -e "${GREEN}saprouter reloaded.${RESET}\n"
+	    echo -e "\n${GREEN}Entries added into webdisptab and saprouttab successfully.${RESET}\n"
+	elif [ "$ACL_CHOICE" -eq 2 ]
+	then
+	    echo -e "\n${GREEN}Entries added into webdisptab successfully.${RESET}\n"
 	else
-	    echo -e "${YELLOW}Error. saprouter exited with status $_ret.${RESET}\n"
+	    echo -e "\n${GREEN}Entries added into saprouttab successfully.${RESET}\n"
+	fi
+	
+	# Reload saprouter
+	if [ "$ACL_CHOICE" -eq 1 ] || [ "$ACL_CHOICE" -eq 3 ]
+	then
+	    _detect_init_system
+	    echo -e "${BOLD}Reloading saprouter... (Detected init system: $INIT_SYSTEM)${RESET}\n"
+	    _reload_saprouter
+	    local _ret="$?"
+	    if [ "$_ret" -eq 0 ]
+	    then
+		echo -e "${GREEN}saprouter reloaded.${RESET}\n"
+	    else
+		echo -e "${YELLOW}Error. saprouter exited with status $_ret.${RESET}\n"
+	    fi
 	fi
     fi
 
@@ -501,7 +604,7 @@ if [ -f "$LOCK_FILE" ]
 then
     echo -e "${YELLOW}Error. Another instance of this script is already running. Refusing to continue.\n
 Running more than one instance of this script at a time could potentially cause malformed or corrupted entries in the ACL files.\n
-If you're sure of what you're doing and want to continue, delete the file '$LOCK_FILE' and run the script again.\n"
+If you're sure of what you're doing and want to continue, delete the file '$LOCK_FILE' and run the script again.${RESET}\n"
     exit 1
 else
     # Lock current instance of the script
